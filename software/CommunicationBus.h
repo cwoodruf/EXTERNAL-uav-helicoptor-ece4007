@@ -19,6 +19,7 @@ class CommunicationBus {
 
 		virtual int recv(char *buf, int len);
 		virtual int send(const char *buf, int len);
+		virtual void stop();
 };
 
 CommunicationBus::CommunicationBus() {
@@ -48,6 +49,11 @@ int CommunicationBus::send(const char *buf, int len) {
 	} else {
 		return -1;
 	}
+}
+
+void CommunicationBus::stop() {
+	close(fd);
+	ready = false;
 }
 
 #endif
