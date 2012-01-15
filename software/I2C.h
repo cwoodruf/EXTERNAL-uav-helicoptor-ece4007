@@ -54,6 +54,4 @@ bool I2C::init(unsigned char channel,int addr) {
 
 	return ready;
 }
-
-
 #endif
