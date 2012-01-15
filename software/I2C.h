@@ -12,16 +12,32 @@
 using namespace std;
 
 
-//Base Class for I2C Devices
+//Class for I2C Devices
 class I2C : public CommunicationBus {
 
+	private:
+		int fd;
+		bool ready;
+	
+
 	public:
+		I2C();
 		I2C(unsigned char channel,int addr);
+
+		bool init(unsigned char channel,int addr);
 };
+
+I2C::I2C() : fd(-1), ready(false) {
+
+}
+
+I2C::I2C(unsigned char channel,int addr) {
+	init(channel,addr);	
+}
 
 //channel is the I2C channel to connect to
 //addr is the address of the device to connect to
-I2C::I2C(unsigned char channel,int addr) {
+bool I2C::init(unsigned char channel,int addr) {
 	char dev[40];
 
 	sprintf(dev,"/dev/i2c-%c",channel); 
@@ -35,6 +51,8 @@ I2C::I2C(unsigned char channel,int addr) {
 			ready = true;
 		}
 	}
+
+	return ready;
 }
 
 

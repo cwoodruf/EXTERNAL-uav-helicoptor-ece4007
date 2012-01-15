@@ -17,8 +17,8 @@ class CommunicationBus {
 		CommunicationBus();
 		CommunicationBus(const char *filename);
 
-		virtual int read_raw(char *buf, int len);
-		virtual int write_raw(const char *buf, int len);
+		virtual int recv(char *buf, int len);
+		virtual int send(const char *buf, int len);
 };
 
 CommunicationBus::CommunicationBus() {
@@ -27,13 +27,14 @@ CommunicationBus::CommunicationBus() {
 }
 
 CommunicationBus::CommunicationBus(const char *filename) {
-	if(fd = open(filename,O_RDWR) < 0) {
+	if((fd = open(filename,O_RDWR)) < 0) {
 		ready = false;
+	} else {
+		ready = true;
 	}
-	ready = true;
 }
 
-int CommunicationBus::read_raw(char *buf, int len) {
+int CommunicationBus::recv(char *buf, int len) {
 	if(ready) {
 		return read(fd,buf,len);
 	} else {
@@ -41,7 +42,7 @@ int CommunicationBus::read_raw(char *buf, int len) {
 	}
 }
 
-int CommunicationBus::write_raw(const char *buf, int len) {
+int CommunicationBus::send(const char *buf, int len) {
 	if(ready) {
 		return write(fd,buf,len);
 	} else {
