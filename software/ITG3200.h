@@ -97,8 +97,8 @@ class ITG3200 : public I2C {
 		int get_whoami(unsigned char &addr);
 		int get_sample_rate_divider(unsigned char &div);
 		int set_sample_rate_divider(unsigned char value);
-		int get_DLPF_full_scale(unsigned char &dlpf,unsigned char &fs);
-		int set_DLPF_full_scale(unsigned char dlpf,unsigned char fs);
+		int get_dlpf_full_scale(unsigned char &dlpf,unsigned char &fs);
+		int set_dlpf_full_scale(unsigned char dlpf,unsigned char fs);
 		int get_interrupt_conf(bool &actl, bool &open, bool &latch_int_en, bool &int_anyrd_2clear, bool &itg_rdy_en, bool &raw_rdy_en);
 		int set_interrupt_conf(bool actl, bool open, bool latch_int_en, bool int_anyrd_2clear, bool itg_rdy_en, bool raw_rdy_en);
 		int get_interrupt_status(bool &itg_rdy, bool &raw_data_rdy);
@@ -147,14 +147,14 @@ int ITG3200::set_sample_rate_divider(unsigned char value) {
 	return write_byte(ITG3200_SMPLRT_DIV,value);
 }
 
-int ITG3200::get_DLPF_full_scale(unsigned char &dlpf,unsigned char &fs) {
+int ITG3200::get_dlpf_full_scale(unsigned char &dlpf,unsigned char &fs) {
 	int status = read_byte(ITG3200_DLPF_FS,dlpf);
 	fs = dlpf >> 3;
 	dlpf = dlpf & ITG3200_DLPFFS_DLPF_CFG;
 	return status;
 }
 
-int ITG3200::set_DLPF_full_scale(unsigned char dlpf,unsigned char fs) {
+int ITG3200::set_dlpf_full_scale(unsigned char dlpf,unsigned char fs) {
 	unsigned char value = (fs << 3) | (dlpf & ITG3200_DLPFFS_DLPF_CFG);	
 	return write_byte(ITG3200_DLPF_FS,value);
 }
