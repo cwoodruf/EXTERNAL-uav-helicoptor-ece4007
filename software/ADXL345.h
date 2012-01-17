@@ -1,16 +1,7 @@
 #ifndef ADXL345_2_H
 #define ADXL345_2_H
 
-#include <string.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <linux/i2c-dev.h>
-#include <linux/i2c.h>
-#include <sys/ioctl.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
+#include "I2C.h"
 #include <iostream>
 
 using namespace std;
@@ -66,13 +57,10 @@ using namespace std;
 #define ADXL345_ID					0x53
 
 
-class ADXL345 {
+class ADXL345 : public I2C {
 
 	private:
-		int fd;
-		char buf[10];
 		int range;
-		int status;
 
 		float convert_to_g(unsigned short raw);
 
@@ -81,13 +69,8 @@ class ADXL345 {
 		ADXL345(int i);
 		~ADXL345();	
 
-		int init(int channel);
-		int get_status();
-		int write_address(unsigned char reg);
-		int write_byte(unsigned char reg, unsigned char data);
-		int write_masked_byte(unsigned char reg, unsigned char data, unsigned char mask);
-		int read_current_byte(unsigned char *data);
-		int read_byte(unsigned char reg, unsigned char *data);
+		int reconnect();
+		int reconnect(int channel);
 		int measure_mode();
 		int standby_mode();
 		int set_low_power_mode(unsigned char power);
@@ -100,93 +83,16 @@ class ADXL345 {
 
 };
 
-ADXL345::ADXL345() {
-	init(2);
+ADXL345::ADXL345() : I2C(2,ADXL345_ID) {
+	status = get_range(&range);
 }
 
-ADXL345::ADXL345(int channel) {
-	init(channel);
+ADXL345::ADXL345(int i) : I2C(i,ADXL345_ID) {
+	status = get_range(&range);
 }
 
 ADXL345::~ADXL345() {
 
-}
-
-int ADXL345::init(int channel) {
-
-	char file[40];
-	sprintf(file,"/dev/i2c-%d",channel);
-
-	if((fd = open(file,O_RDWR)) < 0) {
-		cout << "ERROR Opening File" << endl;
-		status = -1;
-		return status;
-	}
-
-	if(ioctl(fd,I2C_SLAVE,ADXL345_ID) < 0) {
-		cout << "ERROR Opening Device" << endl;
-		status = -1;
-		return status;
-	}
-
-	status = get_range(&range);
-	return status;
-}
-
-int ADXL345::get_status() {
-	return status;
-}
-
-int ADXL345::write_address(unsigned char reg) {
-	buf[0] = reg;
-
-	if(write(fd,buf,1) != 1) {
-		return -1;
-	}
-	return 0;
-}
-
-int ADXL345::write_byte(unsigned char reg, unsigned char data) {
-	buf[0] = reg;
-	buf[1] = data;
-
-	if(write(fd,buf,2) != 2) {
-		return -1;
-	}
-	return 0;
-}
-
-int ADXL345::write_masked_byte(unsigned char reg, unsigned char data, unsigned char mask) {
-	unsigned char currentData;
-
-	if(write_address(reg) != 0) {
-		return -1;
-	}
-
-	if(read_current_byte(&currentData) != 0) {
-		return -2;
-	}
-
-	data = (currentData & ~mask) | (data & mask);
-	return write_byte(reg,data);
-}
-
-
-int ADXL345::read_current_byte(unsigned char *data) {
-	if(read(fd,buf,1) != 1) {
-		return -1;
-	}
-
-	*data = buf[0];
-	return 0;
-}
-
-int ADXL345::read_byte(unsigned char reg, unsigned char *data) {
-	if(write_address(reg) != 0) {
-		return -1;
-	}
-
-	return read_current_byte(data);
 }
 
 float ADXL345::convert_to_g(unsigned short raw) {
@@ -204,6 +110,18 @@ float ADXL345::convert_to_g(unsigned short raw) {
 	}
 
 	return (float)range * (res/0x1FF);
+}
+
+int ADXL345::reconnect() {
+	bus_init(2,ADXL345_ID);
+	status = get_range(&range);
+	return status;
+}
+
+int ADXL345::reconnect(int channel) {
+	bus_init(channel,ADXL345_ID);
+	status = get_range(&range);
+	return status;
 }
 
 int ADXL345::measure_mode() {
