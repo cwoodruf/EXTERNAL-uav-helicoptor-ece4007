@@ -75,20 +75,20 @@ class ADXL345 : public I2C {
 		int standby_mode();
 		int set_low_power_mode(unsigned char power);
 		int set_range(char range_set);
-		int get_range(int *oRange);
-		int get_data(float *x, float *y, float *z);
-		int get_data_x(float *x);
-		int get_data_y(float *y);
-		int get_data_z(float *z);
+		int get_range(int &oRange);
+		int get_data(float &x, float &y, float &z);
+		int get_data_x(float &x);
+		int get_data_y(float &y);
+		int get_data_z(float &z);
 
 };
 
 ADXL345::ADXL345() : I2C(2,ADXL345_ID) {
-	status = get_range(&range);
+	status = get_range(range);
 }
 
 ADXL345::ADXL345(int i) : I2C(i,ADXL345_ID) {
-	status = get_range(&range);
+	status = get_range(range);
 }
 
 ADXL345::~ADXL345() {
@@ -114,13 +114,13 @@ float ADXL345::convert_to_g(unsigned short raw) {
 
 int ADXL345::reconnect() {
 	bus_init(2,ADXL345_ID);
-	status = get_range(&range);
+	status = get_range(range);
 	return status;
 }
 
 int ADXL345::reconnect(int channel) {
 	bus_init(channel,ADXL345_ID);
-	status = get_range(&range);
+	status = get_range(range);
 	return status;
 }
 
@@ -164,10 +164,10 @@ int ADXL345::set_range(char range_set) {
 	return 0;
 }
 
-int ADXL345::get_range(int *oRange) {
+int ADXL345::get_range(int &oRange) {
 	unsigned char data;
 
-	if(read_byte(ADXL345_DATA_FORMAT,&data) != 0) {
+	if(read_byte(ADXL345_DATA_FORMAT,data) != 0) {
 		return -1;
 	}
 
@@ -175,16 +175,16 @@ int ADXL345::get_range(int *oRange) {
 
 	switch(data) {
 		case 0x00:
-			*oRange = 2;
+			oRange = 2;
 			break;
 		case 0x01:
-			*oRange = 4;
+			oRange = 4;
 			break;
 		case 0x02:
-			*oRange = 8;
+			oRange = 8;
 			break;
 		case 0x03:
-			*oRange = 16;
+			oRange = 16;
 			break;
 		default:
 			return -1;
@@ -193,70 +193,70 @@ int ADXL345::get_range(int *oRange) {
 	return 0;
 }
 
-int ADXL345::get_data(float *x, float *y, float *z) {
+int ADXL345::get_data(float &x, float &y, float &z) {
 	int res = get_data_x(x);
 	res += get_data_y(y);
 	res += get_data_z(z);
 	return res;
 }
 
-int ADXL345::get_data_x(float *x) {
+int ADXL345::get_data_x(float &x) {
 	unsigned char data;
 	unsigned short raw;
 
-	if(read_byte(ADXL345_DATAX0, &data) != 0) {
+	if(read_byte(ADXL345_DATAX0, data) != 0) {
 		return -1;
 	}
 
 	raw = data;
 
-	if(read_byte(ADXL345_DATAX1, &data) != 0) {
+	if(read_byte(ADXL345_DATAX1, data) != 0) {
 		return -1;
 	}
 
 	raw += data << 8;
 
-	*x = convert_to_g(raw);
+	x = convert_to_g(raw);
 	return 0;
 }
 
-int ADXL345::get_data_y(float *y) {
+int ADXL345::get_data_y(float &y) {
 	unsigned char data;
 	unsigned short raw;
 
-	if(read_byte(ADXL345_DATAY0, &data) != 0) {
+	if(read_byte(ADXL345_DATAY0, data) != 0) {
 		return -1;
 	}
 
 	raw = data;
 
-	if(read_byte(ADXL345_DATAY1, &data) != 0) {
+	if(read_byte(ADXL345_DATAY1, data) != 0) {
 		return -1;
 	}
 
 	raw += data << 8;
 
-	*y = convert_to_g(raw);
+	y = convert_to_g(raw);
 	return 0;
 }
 
-int ADXL345::get_data_z(float *z) {
+int ADXL345::get_data_z(float &z) {
 	unsigned char data;
 	unsigned short raw;
 
-	if(read_byte(ADXL345_DATAZ0, &data) != 0) {
+	if(read_byte(ADXL345_DATAZ0, data) != 0) {
 		return -1;
 	}
 
 	raw = data;
 
-	if(read_byte(ADXL345_DATAZ1, &data) != 0) {
+	if(read_byte(ADXL345_DATAZ1, data) != 0) {
 		return -1;
 	}
 
 	raw += data << 8;
 
-	*z = convert_to_g(raw);
+	z = convert_to_g(raw);
 	return 0;
 }
 
