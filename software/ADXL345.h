@@ -72,6 +72,7 @@ class ADXL345 {
 		int fd;
 		char buf[10];
 		int range;
+		int status;
 
 		float convert_to_g(unsigned short raw);
 
@@ -80,6 +81,8 @@ class ADXL345 {
 		ADXL345(int i);
 		~ADXL345();	
 
+		int init(int channel);
+		int get_status();
 		int write_address(unsigned char reg);
 		int write_byte(unsigned char reg, unsigned char data);
 		int write_masked_byte(unsigned char reg, unsigned char data, unsigned char mask);
@@ -89,7 +92,7 @@ class ADXL345 {
 		int standby_mode();
 		int set_low_power_mode(unsigned char power);
 		int set_range(char range_set);
-		int get_range();
+		int get_range(int *oRange);
 		int get_data(float *x, float *y, float *z);
 		int get_data_x(float *x);
 		int get_data_y(float *y);
@@ -98,38 +101,40 @@ class ADXL345 {
 };
 
 ADXL345::ADXL345() {
-	if((fd = open("/dev/i2c-2",O_RDWR)) < 0) {
-		cout << "ERROR Opening File" << endl;
-		return;
-	}
-
-	if(ioctl(fd,I2C_SLAVE,ADXL345_ID) < 0) {
-		cout << "ERROR Opening Device" << endl;
-		return;
-	}
-
-	range = get_range();
+	init(2);
 }
 
 ADXL345::ADXL345(int channel) {
+	init(channel);
+}
+
+ADXL345::~ADXL345() {
+
+}
+
+int ADXL345::init(int channel) {
+
 	char file[40];
 	sprintf(file,"/dev/i2c-%d",channel);
 
 	if((fd = open(file,O_RDWR)) < 0) {
 		cout << "ERROR Opening File" << endl;
-		return;
+		status = -1;
+		return status;
 	}
 
 	if(ioctl(fd,I2C_SLAVE,ADXL345_ID) < 0) {
 		cout << "ERROR Opening Device" << endl;
-		return;
+		status = -1;
+		return status;
 	}
 
-	range = get_range();
+	status = get_range(&range);
+	return status;
 }
 
-ADXL345::~ADXL345() {
-
+int ADXL345::get_status() {
+	return status;
 }
 
 int ADXL345::write_address(unsigned char reg) {
@@ -241,7 +246,7 @@ int ADXL345::set_range(char range_set) {
 	return 0;
 }
 
-int ADXL345::get_range() {
+int ADXL345::get_range(int *oRange) {
 	unsigned char data;
 
 	if(read_byte(ADXL345_DATA_FORMAT,&data) != 0) {
@@ -252,16 +257,16 @@ int ADXL345::get_range() {
 
 	switch(data) {
 		case 0x00:
-			range = 2;
+			*oRange = 2;
 			break;
 		case 0x01:
-			range = 4;
+			*oRange = 4;
 			break;
 		case 0x02:
-			range = 8;
+			*oRange = 8;
 			break;
 		case 0x03:
-			range= 16;
+			*oRange = 16;
 			break;
 		default:
 			return -1;
