@@ -7,8 +7,8 @@
 using namespace std;
 
 //ADDRs
-#define ITG3200_ADR_ADO_HIGH	0x69
-#define ITG3200_ADR_ADO_LOW		0x68
+#define ITG3200_ADR_ADO_HI		0x69
+#define ITG3200_ADR_ADO_LO		0x68
 
 //Register Addresses
 #define ITG3200_WHO_AM_I		0x00
@@ -16,10 +16,14 @@ using namespace std;
 #define ITG3200_DLPF_FS			0x16
 #define ITG3200_INT_CFG			0x17
 #define ITG3200_INT_STATUS		0x1A
-#define ITG3200_TEMP_OUT		0x1B
-#define ITG3200_GYRO_XOUT		0x1D
-#define ITG3200_GYRO_YOUT		0x1F
-#define ITG3200_GYRO_ZOUT		0x21
+#define ITG3200_TEMP_OUT_HI		0x1B
+#define ITG3200_TEMP_OUT_LO		0x1C
+#define ITG3200_GYRO_XOUT_HI	0x1D
+#define ITG3200_GYRO_XOUT_LO	0x1E
+#define ITG3200_GYRO_YOUT_HI	0x1F
+#define ITG3200_GYRO_YOUT_LO	0x20
+#define ITG3200_GYRO_ZOUT_HI	0x21
+#define ITG3200_GYRO_ZOUT_LO	0x22
 #define ITG3200_PWR_MGM			0x2E
 
 //Bit Mappings
@@ -89,13 +93,31 @@ class ITG3200 : public I2C {
 		int reconnect();
 		int reconnect(int channel);
 		int reconnect(int channel, int addr);
+
+		int get_whoami(unsigned char *addr);
+		int get_sample_rate_divider(unsigned char *div);
+		int set_sample_rate_divider(unsigned char value);
+		int get_DLPF_full_scale(unsigned char *dlpf,unsigned char *fs);
+		int set_DLPF_full_scale(unsigned char dlpf,unsigned char fs);
+		int get_interrupt_conf(bool *actl, bool *open, bool *latch_int_en, bool *int_anyrd_2clear, bool *itg_rdy_en, bool *raw_rdy_en);
+		int set_interrupt_conf(bool actl, bool open, bool latch_int_en, bool int_anyrd_2clear, bool itg_rdy_en, bool raw_rdy_en);
+		int get_interrupt_status(bool *itg_rdy, bool *raw_data_rdy);
+		int get_temp_out(short int *temp);
+		int get_x_out(short int *x);
+		int get_y_out(short int *y);
+		int get_z_out(short int *z);
+		int get_power_management(bool *h_reset, bool *sleep, bool *stby_xg, bool *stby_yg, bool *stby_zg, unsigned char *clk_sel);
+		int set_power_management(bool h_reset, bool sleep, bool stby_xg, bool stby_yg, bool stby_zg, unsigned char clk_sel);
+
+
+
 };
 
-ITG3200::ITG3200() : I2C(2,ITG3200_ADR_ADO_HIGH) {
+ITG3200::ITG3200() : I2C(2,ITG3200_ADR_ADO_LO) {
 
 }
 
-ITG3200::ITG3200(int channel) : I2C(channel,ITG3200_ADR_ADO_HIGH) {
+ITG3200::ITG3200(int channel) : I2C(channel,ITG3200_ADR_ADO_LO) {
 
 }
 
@@ -104,15 +126,150 @@ ITG3200::ITG3200(int channel,int addr) : I2C(channel,addr) {
 }
 
 int ITG3200::reconnect() {
-	return bus_init(2,ITG3200_ADR_ADO_HIGH);
+	return bus_init(2,ITG3200_ADR_ADO_LO);
 }
 
 int ITG3200::reconnect(int channel) {
-	return bus_init(channel,ITG3200_ADR_ADO_HIGH);
+	return bus_init(channel,ITG3200_ADR_ADO_LO);
 }
 
 int ITG3200::reconnect(int channel, int addr) {
 	return bus_init(channel,addr);
+}
+
+int ITG3200::get_whoami(unsigned char *addr) {
+	return read_byte(ITG3200_WHO_AM_I,addr);
+}
+
+int ITG3200::get_sample_rate_divider(unsigned char *div) {
+	return read_byte(ITG3200_SMPLRT_DIV,div);
+}
+
+int ITG3200::set_sample_rate_divider(unsigned char value) {
+	return write_byte(ITG3200_SMPLRT_DIV,value);
+}
+
+int ITG3200::get_DLPF_full_scale(unsigned char *dlpf,unsigned char *fs) {
+	int status = read_byte(ITG3200_DLPF_FS,dlpf);
+	*fs = *dlpf >> 3;
+	*dlpf = *dlpf & ITG3200_DLPFFS_DLPF_CFG;
+	return status;
+}
+
+int ITG3200::set_DLPF_full_scale(unsigned char dlpf,unsigned char fs) {
+	unsigned char value = (fs << 3) | (dlpf & ITG3200_DLPFFS_DLPF_CFG);	
+	return write_byte(ITG3200_DLPF_FS,value);
+}
+
+int ITG3200::get_interrupt_conf(bool *actl, bool *open, bool *latch_int_en, bool *int_anyrd_2clear, bool *itg_rdy_en, bool *raw_rdy_en) {
+	unsigned char value;
+	int status = read_byte(ITG3200_INT_CFG,&value);
+
+	*actl = value && ITG3200_INTCFG_ACTL;
+	*open = value && ITG3200_INTCFG_OPEN;
+	*latch_int_en = value && ITG3200_INTCFG_LATCH_INT_EN;
+	*int_anyrd_2clear = value && ITG3200_INTCFG_INT_ANYRD_2CLEAR;
+	*itg_rdy_en = value && ITG3200_INTCFG_ITG_RDY_EN;
+	*raw_rdy_en = value && ITG3200_INTCFG_RAW_RDY_EN;
+
+	return status;
+}
+
+int ITG3200::set_interrupt_conf(bool actl, bool open, bool latch_int_en, bool int_anyrd_2clear, bool itg_rdy_en, bool raw_rdy_en) {
+
+	unsigned char value = 0;
+	value = (actl << 7) |
+			(open << 6) |
+			(latch_int_en << 5) |
+			(0 << 3) |
+			(int_anyrd_2clear << 4) |
+			(itg_rdy_en << 2) |
+			(0 << 1) |
+			raw_rdy_en & ITG3200_INTCFG_RAW_RDY_EN;
+
+
+	return write_byte(ITG3200_INT_CFG,value);
+}
+
+int ITG3200::get_interrupt_status(bool *itg_rdy, bool *raw_data_rdy) {
+	unsigned char value;
+	int status = read_byte(ITG3200_INT_STATUS,&value);
+
+	*itg_rdy = value && ITG3200_INTSTATUS_ITG_RDY; 
+	*raw_data_rdy = value && ITG3200_INTSTATUS_RAW_DATA_RDY;
+
+	return status;
+} 
+
+int ITG3200::get_temp_out(short int *temp) {
+	unsigned char v;
+	int status = read_byte(ITG3200_TEMP_OUT_HI,&v);
+
+	*temp = v;
+	status += read_byte(ITG3200_TEMP_OUT_LO,&v);
+	*temp = (*temp << 8) | v;
+
+	return status;
+}
+
+int ITG3200::get_x_out(short int *x) {
+	unsigned char v;
+	int status = read_byte(ITG3200_GYRO_XOUT_HI,&v);
+
+	*x = v;
+	status += read_byte(ITG3200_GYRO_XOUT_LO,&v);
+	*x = (*x << 8) | v;
+
+	return status;
+}
+
+int ITG3200::get_y_out(short int *y) {
+	unsigned char v;
+	int status = read_byte(ITG3200_GYRO_YOUT_HI,&v);
+
+	*y = v;
+	status += read_byte(ITG3200_GYRO_YOUT_LO,&v);
+	*y = (*y << 8) | v;
+
+	return status;
+}
+
+int ITG3200::get_z_out(short int *z) {
+	unsigned char v;
+	int status = read_byte(ITG3200_GYRO_ZOUT_HI,&v);
+
+	*z = v;
+	status += read_byte(ITG3200_GYRO_ZOUT_LO,&v);
+	*z = (*z << 8) | v;
+
+	return status;
+}
+
+int ITG3200::get_power_management(bool *h_reset, bool *sleep, bool *stby_xg, bool *stby_yg, bool *stby_zg, unsigned char *clk_sel) {
+	unsigned char value;
+	int status = read_byte(ITG3200_PWR_MGM,&value);
+
+	*h_reset = value && ITG3200_PWRMGM_HRESET;
+	*sleep = value && ITG3200_PWRMGM_SLEEP;
+	*stby_xg = value && ITG3200_PWRMGM_STBY_XG;
+	*stby_yg = value && ITG3200_PWRMGM_STBY_YG;
+	*stby_zg = value && ITG3200_PWRMGM_STBY_ZG;
+	*clk_sel = value & ITG3200_PWRMGM_CLK_SEL;
+
+	return status;
+}
+
+int ITG3200::set_power_management(bool h_reset, bool sleep, bool stby_xg, bool stby_yg, bool stby_zg, unsigned char clk_sel) {
+
+	unsigned char value = 0;
+	value = (h_reset << 7) |
+			(sleep << 6) |
+			(stby_xg << 5) |
+			(stby_yg << 4) |
+			(stby_zg << 3) |
+			(clk_sel & 0x07);
+
+	return write_byte(ITG3200_PWR_MGM,value);
 }
 
 #endif
