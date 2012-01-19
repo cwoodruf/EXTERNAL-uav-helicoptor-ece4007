@@ -13,4 +13,19 @@ void swap(T *a, T *b) {
 	*b = tmp;
 }
 
+
+template <typename T, typename U>
+U scale(T value, float factor, bool scaleup) {
+
+	long f = factor * 1000;
+	U res = 0;
+
+	if(scaleup) {
+		res = (U)((((long long)value*f)+500)/1000);
+	} else {
+		res = (U)((((long long)value*1000)-500)/f);
+	}
+	
+	return res;
+}
 #endif
