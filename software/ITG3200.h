@@ -163,12 +163,12 @@ int ITG3200::get_interrupt_conf(bool &actl, bool &open, bool &latch_int_en, bool
 	unsigned char value;
 	int status = read_byte(ITG3200_INT_CFG,value);
 
-	actl = value && ITG3200_INTCFG_ACTL;
-	open = value && ITG3200_INTCFG_OPEN;
-	latch_int_en = value && ITG3200_INTCFG_LATCH_INT_EN;
-	int_anyrd_2clear = value && ITG3200_INTCFG_INT_ANYRD_2CLEAR;
-	itg_rdy_en = value && ITG3200_INTCFG_ITG_RDY_EN;
-	raw_rdy_en = value && ITG3200_INTCFG_RAW_RDY_EN;
+	actl = value & ITG3200_INTCFG_ACTL;
+	open = value & ITG3200_INTCFG_OPEN;
+	latch_int_en = value & ITG3200_INTCFG_LATCH_INT_EN;
+	int_anyrd_2clear = value & ITG3200_INTCFG_INT_ANYRD_2CLEAR;
+	itg_rdy_en = value & ITG3200_INTCFG_ITG_RDY_EN;
+	raw_rdy_en = value & ITG3200_INTCFG_RAW_RDY_EN;
 
 	return status;
 }
@@ -193,8 +193,8 @@ int ITG3200::get_interrupt_status(bool &itg_rdy, bool &raw_data_rdy) {
 	unsigned char value;
 	int status = read_byte(ITG3200_INT_STATUS,value);
 
-	itg_rdy = value && ITG3200_INTSTATUS_ITG_RDY; 
-	raw_data_rdy = value && ITG3200_INTSTATUS_RAW_DATA_RDY;
+	itg_rdy = value & ITG3200_INTSTATUS_ITG_RDY; 
+	raw_data_rdy = value & ITG3200_INTSTATUS_RAW_DATA_RDY;
 
 	return status;
 } 
@@ -247,11 +247,11 @@ int ITG3200::get_power_management(bool &h_reset, bool &sleep, bool &stby_xg, boo
 	unsigned char value;
 	int status = read_byte(ITG3200_PWR_MGM,value);
 
-	h_reset = value && ITG3200_PWRMGM_HRESET;
-	sleep = value && ITG3200_PWRMGM_SLEEP;
-	stby_xg = value && ITG3200_PWRMGM_STBY_XG;
-	stby_yg = value && ITG3200_PWRMGM_STBY_YG;
-	stby_zg = value && ITG3200_PWRMGM_STBY_ZG;
+	h_reset = value & ITG3200_PWRMGM_HRESET;
+	sleep = value & ITG3200_PWRMGM_SLEEP;
+	stby_xg = value & ITG3200_PWRMGM_STBY_XG;
+	stby_yg = value & ITG3200_PWRMGM_STBY_YG;
+	stby_zg = value & ITG3200_PWRMGM_STBY_ZG;
 	clk_sel = value & ITG3200_PWRMGM_CLK_SEL;
 
 	return status;
