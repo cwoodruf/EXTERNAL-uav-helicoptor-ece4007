@@ -113,8 +113,10 @@ class ADXL345 : public I2C {
 		int get_thresh_ff_raw(unsigned char &thresh_inact);
 		int set_thresh_ff(unsigned short int thresh_inact);
 		int set_thresh_ff_raw(unsigned char thresh_inact);
-
-
+		int get_time_ff(unsigned short int &time);
+		int get_time_ff_raw(unsigned char &time);
+		int set_time_ff(unsigned short int time);
+		int set_time_ff_raw(unsigned char time);
 
 
 };
@@ -379,14 +381,14 @@ int ADXL345::get_act_inact_ctl(bool &act_acdc, bool &act_x_en, bool &act_y_en, b
 	unsigned char value;
 	int status = read_byte(ADXL345_ACT_INACT_CTL,value);
 
-	act_acdc = (value && 0x80);
-	act_x_en = (value && 0x40);
-	act_y_en = (value && 0x20);
-	act_z_en = (value && 0x10);
-	inact_acdc = (value && 0x08);
-	inact_x_en = (value && 0x04);
-	inact_y_en = (value && 0x02);
-	inact_z_en = (value && 0x01);
+	act_acdc = (value & 0x80);
+	act_x_en = (value & 0x40);
+	act_y_en = (value & 0x20);
+	act_z_en = (value & 0x10);
+	inact_acdc = (value & 0x08);
+	inact_x_en = (value & 0x04);
+	inact_y_en = (value & 0x02);
+	inact_z_en = (value & 0x01);
 
 	return status;
 }
@@ -432,5 +434,34 @@ int ADXL345::set_thresh_ff_raw(unsigned char thresh_ff) {
 	return write_byte(ADXL345_THRESH_FF,thresh_ff);
 }
 
+//Each count is 5ms
+//Return value is 0 to 1280ms
+int ADXL345::get_time_ff(unsigned short int &time) {
+	unsigned char tmp;
+	int status = read_byte(ADXL345_TIME_FF,tmp);
+	time = scale<unsigned char,unsigned short int>(tmp,5,true);
+	return status;
+}
 
+int ADXL345::get_time_ff_raw(unsigned char &time) {
+	return read_byte(ADXL345_TIME_FF,time);
+}
+
+//Input is 0 to 1280ms
+int ADXL345::set_time_ff(unsigned short int time) {
+	time = LIMIT(0,time,1280);
+	unsigned char tmp = scale<unsigned short int,unsigned char>(time,5,false);
+	return write_byte(ADXL345_TIME_FF,tmp);
+}
+
+int ADXL345::set_time_ff_raw(unsigned char time) {
+	return write_byte(ADXL345_TIME_FF,time);
+}
+/*
+int ADXL345::get_tap_axes(bool &suppress, bool &tap_x_en, bool tap_y_en, bool tap_z_en) {
+	unsigned char value;
+	int status = read_byte(ADXL345_TAP_AXES,value);
+
+	suppress = (value & 0x)
+}*/
 #endif
