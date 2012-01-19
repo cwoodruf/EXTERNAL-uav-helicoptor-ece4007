@@ -2,13 +2,13 @@
 #define ADXL345_2_H
 
 #include "I2C.h"
+#include "util.h"
 #include <iostream>
 
 using namespace std;
 
 //Register Addresses
 #define ADXL345_DEVID				0x00
-#define ADXL345_RESERVED1			0x01
 #define ADXL345_THRESH_TAP			0x1D
 #define ADXL345_OFSX				0x1E
 #define ADXL345_OFSY				0x1F
@@ -60,9 +60,6 @@ using namespace std;
 class ADXL345 : public I2C {
 
 	private:
-		int range;
-
-		float convert_to_g(unsigned short raw);
 
 	public:
 		ADXL345();
@@ -71,193 +68,368 @@ class ADXL345 : public I2C {
 
 		int reconnect();
 		int reconnect(int channel);
-		int measure_mode();
-		int standby_mode();
-		int set_low_power_mode(unsigned char power);
-		int set_range(char range_set);
-		int get_range(int &oRange);
-		int get_data(float &x, float &y, float &z);
-		int get_data_x(float &x);
-		int get_data_y(float &y);
-		int get_data_z(float &z);
+		int get_dev_id(unsigned char &id);
+		int get_thresh_tap(unsigned short int &thresh_tap);
+		int get_thresh_tap_raw(unsigned char &thresh_tap);
+		int set_thresh_tap(unsigned short int thresh_tap);
+		int set_thresh_tap_raw(unsigned char thresh_tap);
+		int get_offset_x(short int &offset_x);
+		int get_offset_x_raw(unsigned char &offset_x);
+		int set_offset_x(short int offset_x);
+		int set_offset_x_raw(unsigned char offset_x);
+		int get_offset_y(short int &offset_y);
+		int get_offset_y_raw(unsigned char &offset_y);
+		int set_offset_y(short int offset_y);
+		int set_offset_y_raw(unsigned char offset_y);
+		int get_offset_z(short int &offset_z);
+		int get_offset_z_raw(unsigned char &offset_z);
+		int set_offset_z(short int offset_z);
+		int set_offset_z_raw(unsigned char offset_z);
+		int get_dur(unsigned int &dur);
+		int get_dur_raw(unsigned char &dur);
+		int set_dur(unsigned int dur);
+		int set_dur_raw(unsigned char dur);
+		int get_latency(unsigned short int &latency);
+		int get_latency_raw(unsigned char &latency);
+		int set_latency(unsigned short int latency);
+		int set_latency_raw(unsigned char latency);
+		int get_window(unsigned short int &window);
+		int get_window_raw(unsigned char &window);
+		int set_window(unsigned short int window);
+		int set_window_raw(unsigned char window);
+		int get_thresh_act(unsigned short int &thresh_inact);
+		int get_thresh_act_raw(unsigned char &thresh_inact);
+		int set_thresh_act(unsigned short int thresh_inact);
+		int set_thresh_act_raw(unsigned char thresh_inact);
+		int get_thresh_inact(unsigned short int &thresh_inact);
+		int get_thresh_inact_raw(unsigned char &thresh_inact);
+		int set_thresh_inact(unsigned short int thresh_inact);
+		int set_thresh_inact_raw(unsigned char thresh_inact);
+		int get_time_inact(unsigned char &time);
+		int set_time_inact(unsigned char time);
+		int get_act_inact_ctl(bool &act_acdc, bool &act_x_en, bool &act_y_en, bool &act_z_en, bool &inact_acdc, bool &inact_x_en, bool &inact_y_en, bool &inact_z_en);
+		int set_act_inact_ctl(bool act_acdc, bool act_x_en, bool act_y_en, bool act_z_en, bool inact_acdc, bool inact_x_en, bool inact_y_en, bool inact_z_en);
+		int get_thresh_ff(unsigned short int &thresh_inact);
+		int get_thresh_ff_raw(unsigned char &thresh_inact);
+		int set_thresh_ff(unsigned short int thresh_inact);
+		int set_thresh_ff_raw(unsigned char thresh_inact);
+
+
+
 
 };
 
 ADXL345::ADXL345() : I2C(2,ADXL345_ID) {
-	status = get_range(range);
 }
 
 ADXL345::ADXL345(int i) : I2C(i,ADXL345_ID) {
-	status = get_range(range);
 }
 
 ADXL345::~ADXL345() {
-
-}
-
-float ADXL345::convert_to_g(unsigned short raw) {
-	bool neg = false;
-	float res;
-
-	if((raw >> 15) == 1) {
-		raw = -raw + 1;
-		neg = true;
-	}
-
-	res = (float)raw;
-	if(neg) {
-		res *= -1;
-	}
-
-	return (float)range * (res/0x1FF);
 }
 
 int ADXL345::reconnect() {
 	bus_init(2,ADXL345_ID);
-	status = get_range(range);
 	return status;
 }
 
 int ADXL345::reconnect(int channel) {
 	bus_init(channel,ADXL345_ID);
-	status = get_range(range);
 	return status;
 }
 
-int ADXL345::measure_mode() {
-	return write_masked_byte(ADXL345_POWER_CTL,0x08,0x08);
+int ADXL345::get_dev_id(unsigned char &id) {
+	return read_byte(ADXL345_DEVID,id);
 }
 
-int ADXL345::standby_mode() {
-	return write_masked_byte(ADXL345_POWER_CTL,0x00,0x08);
+//Each count is 62.5 mg
+//Return value is 0 to 16000 mg
+int ADXL345::get_thresh_tap(unsigned short int &thresh_tap) {
+	unsigned char read;
+	int status = read_byte(ADXL345_THRESH_TAP,read);
+	thresh_tap = scale<unsigned char,unsigned short int>(read,62.5,true);
+	return status;
 }
 
-int ADXL345::set_low_power_mode(unsigned char power) {
-	return write_masked_byte(ADXL345_BW_RATE, power<<3, 0x10);
+//Returns value in counts
+int ADXL345::get_thresh_tap_raw(unsigned char &thresh_tap) {
+	return read_byte(ADXL345_THRESH_TAP,thresh_tap);
 }
 
-int ADXL345::set_range(char range_set) {
-	unsigned char rate = 0x0F;
-
-	switch(range_set) {
-		case 0x02:
-			rate = 0x00;
-			break;
-		case 0x04:
-			rate = 0x01;
-			break;
-		case 0x08:
-			rate = 0x02;
-			break;
-		case 0x10:
-			rate = 0x03;
-			break;
-		default:
-			return -1;
-	}
-
-	if(write_masked_byte(ADXL345_DATA_FORMAT,rate,0x03) != 0) {
-		return -2;
-	}
-
-	range = range_set;
-	return 0;
+//Input should be between 0 and 16000 mg
+int ADXL345::set_thresh_tap(unsigned short int thresh_tap) {
+	thresh_tap = LIMIT(0,thresh_tap,16000);
+	unsigned char value = scale<unsigned short int,unsigned char>(thresh_tap,62.5,false);
+	return write_byte(ADXL345_THRESH_TAP,value);
 }
 
-int ADXL345::get_range(int &oRange) {
-	unsigned char data;
-
-	if(read_byte(ADXL345_DATA_FORMAT,data) != 0) {
-		return -1;
-	}
-
-	data = data & 0x03;
-
-	switch(data) {
-		case 0x00:
-			oRange = 2;
-			break;
-		case 0x01:
-			oRange = 4;
-			break;
-		case 0x02:
-			oRange = 8;
-			break;
-		case 0x03:
-			oRange = 16;
-			break;
-		default:
-			return -1;
-	}
-
-	return 0;
+//Input range 0x00 to 0xFF
+int ADXL345::set_thresh_tap_raw(unsigned char thresh_tap) {
+	return write_byte(ADXL345_THRESH_TAP,thresh_tap);
 }
 
-int ADXL345::get_data(float &x, float &y, float &z) {
-	int res = get_data_x(x);
-	res += get_data_y(y);
-	res += get_data_z(z);
-	return res;
+//Each count is 15.6 mg
+//Return value is -2000mg to 2000mg
+int ADXL345::get_offset_x(short int &offset_x) {
+	unsigned char read;
+	int status = read_byte(ADXL345_OFSX,read);
+	offset_x = scale<unsigned char,short int>(read,15.6,true);
+	return status;
 }
 
-int ADXL345::get_data_x(float &x) {
-	unsigned char data;
-	unsigned short raw;
-
-	if(read_byte(ADXL345_DATAX0, data) != 0) {
-		return -1;
-	}
-
-	raw = data;
-
-	if(read_byte(ADXL345_DATAX1, data) != 0) {
-		return -1;
-	}
-
-	raw += data << 8;
-
-	x = convert_to_g(raw);
-	return 0;
+int ADXL345::get_offset_x_raw(unsigned char &offset_x) {
+	return read_byte(ADXL345_OFSX,offset_x);
 }
 
-int ADXL345::get_data_y(float &y) {
-	unsigned char data;
-	unsigned short raw;
-
-	if(read_byte(ADXL345_DATAY0, data) != 0) {
-		return -1;
-	}
-
-	raw = data;
-
-	if(read_byte(ADXL345_DATAY1, data) != 0) {
-		return -1;
-	}
-
-	raw += data << 8;
-
-	y = convert_to_g(raw);
-	return 0;
+//Input should be between -2000mg and 2000 mg
+int ADXL345::set_offset_x(short int offset_x) {
+	offset_x = LIMIT(-2000,offset_x,2000);
+	unsigned char value = scale<short int,unsigned char>(offset_x,15.6,false);
+	return write_byte(ADXL345_OFSX,value);
 }
 
-int ADXL345::get_data_z(float &z) {
-	unsigned char data;
-	unsigned short raw;
+int ADXL345::set_offset_x_raw(unsigned char offset_x) {
+	return write_byte(ADXL345_OFSX,offset_x);
+}
 
-	if(read_byte(ADXL345_DATAZ0, data) != 0) {
-		return -1;
-	}
+//Each count is 15.6 mg
+//Return value is -2000mg to 2000mg
+int ADXL345::get_offset_y(short int &offset_y) {
+	unsigned char read;
+	int status = read_byte(ADXL345_OFSY,read);
+	offset_y = scale<unsigned char,short int>(read,15.6,true);
+	return status;
+}
 
-	raw = data;
+int ADXL345::get_offset_y_raw(unsigned char &offset_y) {
+	return read_byte(ADXL345_OFSY,offset_y);
+}
 
-	if(read_byte(ADXL345_DATAZ1, data) != 0) {
-		return -1;
-	}
+//Input should be between -2000mg and 2000 mg
+int ADXL345::set_offset_y(short int offset_y) {
+	offset_y = LIMIT(-2000,offset_y,2000);
+	unsigned char value = scale<short int,unsigned char>(offset_y,15.6,false);
+	return write_byte(ADXL345_OFSY,offset_y);
+}
 
-	raw += data << 8;
+int ADXL345::set_offset_y_raw(unsigned char offset_y) {
+	return write_byte(ADXL345_OFSY,offset_y);
+}
 
-	z = convert_to_g(raw);
-	return 0;
+//Each count is 15.6 mg
+//Return value is -2000mg to 2000mg
+int ADXL345::get_offset_z(short int &offset_z) {
+	unsigned char read;
+	int status = read_byte(ADXL345_OFSZ,read);
+	offset_z = scale<unsigned char,short int>(read,15.6,true);
+	return status;
+}
+
+int ADXL345::get_offset_z_raw(unsigned char &offset_z) {
+	return read_byte(ADXL345_OFSZ,offset_z);
+}
+
+//Input should be between -2000mg and 2000 mg
+int ADXL345::set_offset_z(short int offset_z) {
+	offset_z = LIMIT(-2000,offset_z,2000);
+	unsigned char value = scale<short int,unsigned char>(offset_z,15.6,false);
+	return write_byte(ADXL345_OFSZ,offset_z);
+}
+
+int ADXL345::set_offset_z_raw(unsigned char offset_z) {
+	return write_byte(ADXL345_OFSZ,offset_z);
+}
+
+//Each count is 625us
+//Return value is 0 to 160000us
+int ADXL345::get_dur(unsigned int &dur) {
+	unsigned char tmp;
+	int status = read_byte(ADXL345_DUR,tmp);
+	dur = scale<unsigned char,unsigned int>(tmp,625,true);
+	return status;
+}
+
+int ADXL345::get_dur_raw(unsigned char &dur) {
+	return read_byte(ADXL345_DUR,dur);
+}
+
+//Input value is 0 to 160000us
+int ADXL345::set_dur(unsigned int dur) {
+	dur = LIMIT(0,dur,160000);
+	unsigned char value = scale<unsigned int,unsigned char>(dur,625,false);
+	return write_byte(ADXL345_DUR,value);
+}
+
+int ADXL345::set_dur_raw(unsigned char dur) {
+	return write_byte(ADXL345_DUR,dur);
+}
+
+//Each count is 1.25ms
+//Return value is 0 to 320ms
+int ADXL345::get_latency(unsigned short int &latency) {
+	unsigned char tmp;
+	int status = read_byte(ADXL345_LATENT,tmp);
+	latency = scale<unsigned char,unsigned short int>(tmp,1.25,true);
+	return status;	
+}
+
+int ADXL345::get_latency_raw(unsigned char &latency) {
+	return read_byte(ADXL345_LATENT,latency);
+}
+
+//Input value is 0 to 320ms
+int ADXL345::set_latency(unsigned short int latency) {
+	latency = LIMIT(0,latency,320);
+	unsigned char value = scale<unsigned short int,unsigned char>(latency,1.25,false);
+	return write_byte(ADXL345_LATENT,value);
+}
+
+int ADXL345::set_latency_raw(unsigned char latency) {
+	return write_byte(ADXL345_LATENT,latency);
+}
+
+//Each count is 1.25ms
+//Return value is 0 to 320ms
+int ADXL345::get_window(unsigned short int &window) {
+	unsigned char tmp;
+	int status = read_byte(ADXL345_WINDOW,tmp);
+	window = scale<unsigned char,unsigned short int>(tmp,1.25,true);
+	return status;	
+}
+
+int ADXL345::get_window_raw(unsigned char &window) {
+	return read_byte(ADXL345_WINDOW,window);
+}
+
+//Input value is 0 to 320ms
+int ADXL345::set_window(unsigned short int window) {
+	window = LIMIT(0,window,320);
+	unsigned char value = scale<unsigned short int, unsigned char>(window,1.25,false);
+	return write_byte(ADXL345_WINDOW,value);
+}
+
+int ADXL345::set_window_raw(unsigned char window) {
+	return write_byte(ADXL345_WINDOW,window);
+}
+
+//Each count is 62.5 mg
+//Return value is 0 to 16000 mg
+int ADXL345::get_thresh_act(unsigned short int &thresh_act) {
+	unsigned char read;
+	int status = read_byte(ADXL345_THRESH_ACT,read);
+	thresh_act = scale<unsigned char,unsigned short int>(read,62.5,true);
+	return status;
+}
+
+//Returns value in counts
+int ADXL345::get_thresh_act_raw(unsigned char &thresh_act) {
+	return read_byte(ADXL345_THRESH_ACT,thresh_act);
+}
+
+//Input should be between 0 and 16000 mg
+int ADXL345::set_thresh_act(unsigned short int thresh_act) {
+	thresh_act = LIMIT(0,thresh_act,16000);
+	unsigned char value = scale<unsigned short int,unsigned char>(thresh_act,62.5,false);
+
+	return write_byte(ADXL345_THRESH_ACT,value);
+}
+
+//Input range 0x00 to 0xFF
+int ADXL345::set_thresh_act_raw(unsigned char thresh_act) {
+	return write_byte(ADXL345_THRESH_ACT,thresh_act);
+}
+
+//Each count is 62.5 mg
+//Return value is 0 to 16000 mg
+int ADXL345::get_thresh_inact(unsigned short int &thresh_inact) {
+	unsigned char read;
+	int status = read_byte(ADXL345_THRESH_INACT,read);
+	thresh_inact = scale<unsigned char,unsigned short int>(read,62.5,true);
+	return status;
+}
+
+//Returns value in counts
+int ADXL345::get_thresh_inact_raw(unsigned char &thresh_inact) {
+	return read_byte(ADXL345_THRESH_INACT,thresh_inact);
+}
+
+//Input should be between 0 and 16000 mg
+int ADXL345::set_thresh_inact(unsigned short int thresh_inact) {
+	thresh_inact = LIMIT(0,thresh_inact,16000);
+	unsigned char value = scale<unsigned short int,unsigned char>(thresh_inact,62.5,false);
+
+	return write_byte(ADXL345_THRESH_INACT,value);
+}
+
+//Input range 0x00 to 0xFF
+int ADXL345::set_thresh_inact_raw(unsigned char thresh_inact) {
+	return write_byte(ADXL345_THRESH_INACT,thresh_inact);
+}
+
+//1s per count
+int ADXL345::get_time_inact(unsigned char &time) {
+	return read_byte(ADXL345_TIME_INACT,time);
+}
+
+int ADXL345::set_time_inact(unsigned char time) {
+	return write_byte(ADXL345_TIME_INACT,time);
+}
+
+int ADXL345::get_act_inact_ctl(bool &act_acdc, bool &act_x_en, bool &act_y_en, bool &act_z_en, bool &inact_acdc, bool &inact_x_en, bool &inact_y_en, bool &inact_z_en) {
+	unsigned char value;
+	int status = read_byte(ADXL345_ACT_INACT_CTL,value);
+
+	act_acdc = (value && 0x80);
+	act_x_en = (value && 0x40);
+	act_y_en = (value && 0x20);
+	act_z_en = (value && 0x10);
+	inact_acdc = (value && 0x08);
+	inact_x_en = (value && 0x04);
+	inact_y_en = (value && 0x02);
+	inact_z_en = (value && 0x01);
+
+	return status;
+}
+
+int ADXL345::set_act_inact_ctl(bool act_acdc, bool act_x_en, bool act_y_en, bool act_z_en, bool inact_acdc, bool inact_x_en, bool inact_y_en, bool inact_z_en) {
+
+	unsigned char value = (act_acdc << 7) |
+						  (act_x_en << 6) |
+						  (act_y_en << 5) |
+						  (act_z_en << 4) |
+						  (inact_acdc << 3) |
+						  (inact_x_en << 2) |
+						  (inact_y_en << 1) |
+						  (inact_z_en);
+
+	return write_byte(ADXL345_ACT_INACT_CTL,value);
+}
+
+//Each count is 62.5 mg
+//Return value is 0 to 16000 mg
+int ADXL345::get_thresh_ff(unsigned short int &thresh_ff) {
+	unsigned char read;
+	int status = read_byte(ADXL345_THRESH_FF,read);
+	thresh_ff = scale<unsigned char,unsigned short int>(read,62.5,true);
+	return status;
+}
+
+//Returns value in counts
+int ADXL345::get_thresh_ff_raw(unsigned char &thresh_ff) {
+	return read_byte(ADXL345_THRESH_FF,thresh_ff);
+}
+
+//Input should be between 0 and 16000 mg
+int ADXL345::set_thresh_ff(unsigned short int thresh_ff) {
+	thresh_ff = LIMIT(0,thresh_ff,16000);
+	unsigned char value = scale<unsigned short int,unsigned char>(thresh_ff,62.5,false);
+
+	return write_byte(ADXL345_THRESH_FF,value);
+}
+
+//Input range 0x00 to 0xFF
+int ADXL345::set_thresh_ff_raw(unsigned char thresh_ff) {
+	return write_byte(ADXL345_THRESH_FF,thresh_ff);
 }
 
 
