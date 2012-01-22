@@ -60,14 +60,12 @@ using namespace std;
 class ADXL345 : public I2C {
 
 	private:
-
+		unsigned char range;
 	public:
 		ADXL345();
 		ADXL345(int i);
 		~ADXL345();	
 
-		int reconnect();
-		int reconnect(int channel);
 		int get_dev_id(unsigned char &id);
 		int get_thresh_tap(unsigned short int &thresh_tap);
 		int get_thresh_tap_raw(unsigned char &thresh_tap);
@@ -117,27 +115,42 @@ class ADXL345 : public I2C {
 		int get_time_ff_raw(unsigned char &time);
 		int set_time_ff(unsigned short int time);
 		int set_time_ff_raw(unsigned char time);
+		int get_tap_axes(bool &suppress, bool &tap_x_en, bool &tap_y_en, bool &tap_z_en);
+		int set_tap_axes(bool suppress, bool tap_x_en, bool tap_y_en, bool tap_z_en);
+		int get_tap_status(bool &act_x_src, bool &act_y_src, bool &act_z_src, bool &asleep, bool &tap_x_src, bool &tap_y_src, bool &tap_z_src);
+		int set_tap_status(bool act_x_src, bool act_y_src, bool act_z_src, bool asleep, bool tap_x_src, bool tap_y_src, bool tap_z_src);
+		int get_bw_rate(bool &low_power, unsigned char &rate);
+		int set_bw_rate(bool low_power, unsigned char rate);
+		int get_power_ctl(bool &link, bool &auto_sleep, bool &measure, bool &sleep, unsigned char &wakeup);
+		int set_power_ctl(bool link, bool auto_sleep, bool measure, bool sleep, unsigned char wakeup);
+		int get_int_enable(bool &data_ready, bool &single_tap, bool &double_tap, bool &activity, bool &inactivity, bool &free_fall, bool &watermark, bool &overrun);
+		int set_int_enable(bool data_ready, bool single_tap, bool double_tap, bool activity, bool inactivity, bool free_fall, bool watermark, bool overrun);
+		int get_int_map(bool &data_ready, bool &single_tap, bool &double_tap, bool &activity, bool &inactivity, bool &free_fall, bool &watermark, bool &overrun);
+		int set_int_map(bool data_ready, bool single_tap, bool double_tap, bool activity, bool inactivity, bool free_fall, bool watermark, bool overrun);
+		int get_int_source(bool &data_ready, bool &single_tap, bool &double_tap, bool &activity, bool &inactivity, bool &free_fall, bool &watermark, bool &overrun);
+		int get_data_format(bool &self_test, bool &spi, bool &int_invert, bool &full_res, bool &justify, unsigned char &range);
+		int set_data_format(bool self_test, bool spi, bool int_invert, bool full_res, bool justify, unsigned char range);
+		//int get_data_x(short int &x);
+		int get_data_x_raw(short int &x);
+		//int get_data_y(short int &y);
+		int get_data_y_raw(short int &y);
+		//int get_data_z(short int &z);
+		int get_data_z_raw(short int &z);
 
 
 };
 
 ADXL345::ADXL345() : I2C(2,ADXL345_ID) {
+	bool dummy;
+	get_data_format(dummy,dummy,dummy,dummy,dummy,this->range);
 }
 
 ADXL345::ADXL345(int i) : I2C(i,ADXL345_ID) {
+	bool dummy;
+	get_data_format(dummy,dummy,dummy,dummy,dummy,this->range);
 }
 
 ADXL345::~ADXL345() {
-}
-
-int ADXL345::reconnect() {
-	bus_init(2,ADXL345_ID);
-	return status;
-}
-
-int ADXL345::reconnect(int channel) {
-	bus_init(channel,ADXL345_ID);
-	return status;
 }
 
 int ADXL345::get_dev_id(unsigned char &id) {
@@ -457,11 +470,236 @@ int ADXL345::set_time_ff(unsigned short int time) {
 int ADXL345::set_time_ff_raw(unsigned char time) {
 	return write_byte(ADXL345_TIME_FF,time);
 }
-/*
-int ADXL345::get_tap_axes(bool &suppress, bool &tap_x_en, bool tap_y_en, bool tap_z_en) {
+
+int ADXL345::get_tap_axes(bool &suppress, bool &tap_x_en, bool &tap_y_en, bool &tap_z_en) {
 	unsigned char value;
 	int status = read_byte(ADXL345_TAP_AXES,value);
 
-	suppress = (value & 0x)
-}*/
+	suppress = (value & 0x08);
+	tap_x_en = (value & 0x04);
+	tap_y_en = (value & 0x02);
+	tap_z_en = (value & 0x01);
+
+	return status;
+}
+
+int ADXL345::set_tap_axes(bool suppress, bool tap_x_en, bool tap_y_en, bool tap_z_en) {
+	unsigned char value = 0;
+
+	value = (suppress << 3) | (tap_x_en << 2) | (tap_y_en << 1) | tap_z_en;
+
+	return write_byte(ADXL345_TAP_AXES,value);
+}
+
+int ADXL345::get_tap_status(bool &act_x_src, bool &act_y_src, bool &act_z_src, bool &asleep, bool &tap_x_src, bool &tap_y_src, bool &tap_z_src) {
+	unsigned char value = 0;
+	int status = read_byte(ADXL345_ACT_TAP_STATUS,value);
+
+	act_x_src = (value & 0x40);
+	act_y_src = (value & 0x20);
+	act_z_src = (value & 0x10);
+	asleep = (value & 0x08);
+	tap_x_src = (value & 0x04);
+	tap_y_src = (value & 0x02);
+	tap_z_src = (value & 0x01);
+
+	return status;
+}
+
+int ADXL345::set_tap_status(bool act_x_src, bool act_y_src, bool act_z_src, bool asleep, bool tap_x_src, bool tap_y_src, bool tap_z_src) {
+	unsigned char value = 0;
+
+	value = (act_x_src << 6) |
+			(act_y_src << 5) |
+			(act_z_src << 4) |
+			(asleep << 3) |
+			(tap_x_src << 2) |
+			(tap_y_src << 1) |
+			(tap_z_src);
+
+	return write_byte(ADXL345_ACT_TAP_STATUS,value);
+}
+
+int ADXL345::get_bw_rate(bool &low_power,unsigned char &rate) {
+	unsigned char tmp;
+	int status = read_byte(ADXL345_BW_RATE,tmp);
+
+	low_power = (tmp & 0x10);
+	rate = (tmp & 0x0F);
+
+	return status;
+}
+
+int ADXL345::set_bw_rate(bool low_power, unsigned char rate) {
+
+	unsigned char value = 0;
+	rate &= 0x0F;
+	
+	value = (low_power << 4) | rate;
+	return write_byte(ADXL345_BW_RATE,value);
+}
+
+int ADXL345::get_power_ctl(bool &link, bool &auto_sleep, bool &measure, bool &sleep, unsigned char &wakeup) {
+	unsigned char value = 0;
+	int status = read_byte(ADXL345_POWER_CTL,value);
+
+	link = (value & 0x20);
+	auto_sleep = (value & 0x10);
+	measure = (value & 0x08);
+	sleep = (value & 0x04);
+	wakeup = (value & 0x03);
+
+	return status;
+}
+
+int ADXL345::set_power_ctl(bool link, bool auto_sleep, bool measure, bool sleep, unsigned char wakeup) {
+	unsigned char value = 0;
+
+	value = (link << 5) | (auto_sleep << 4) | (measure << 3) | (sleep << 2) | (wakeup & 0x03);
+
+	return write_byte(ADXL345_POWER_CTL,value);
+}
+
+int ADXL345::get_int_enable(bool &data_ready, bool &single_tap, bool &double_tap, bool &activity, bool &inactivity, bool &free_fall, bool &watermark, bool &overrun) {
+	unsigned char value = 0;
+	int status = read_byte(ADXL345_INT_ENABLE,value);
+
+	data_ready = (value & 0x80);
+	single_tap = (value & 0x40);
+	double_tap = (value & 0x20);
+	activity = (value & 0x10);
+	inactivity = (value & 0x08);
+	free_fall = (value & 0x04);
+	watermark = (value & 0x02);
+	overrun = (value & 0x01);
+
+	return status;
+}
+
+int ADXL345::set_int_enable(bool data_ready, bool single_tap, bool double_tap, bool activity, bool inactivity, bool free_fall, bool watermark, bool overrun) {
+	unsigned char value = 0;
+
+	value = (data_ready << 7) |
+			(single_tap << 6) |
+			(double_tap << 5) |
+			(activity << 4) |
+			(inactivity << 3) |
+			(free_fall << 2) |
+			(watermark << 1) |
+			(overrun);
+
+	return write_byte(ADXL345_INT_ENABLE,value);
+}
+
+int ADXL345::get_int_map(bool &data_ready, bool &single_tap, bool &double_tap, bool &activity, bool &inactivity, bool &free_fall, bool &watermark, bool &overrun) {
+	unsigned char value = 0;
+	int status = read_byte(ADXL345_INT_MAP,value);
+
+	data_ready = (value & 0x80);
+	single_tap = (value & 0x40);
+	double_tap = (value & 0x20);
+	activity = (value & 0x10);
+	inactivity = (value & 0x08);
+	free_fall = (value & 0x04);
+	watermark = (value & 0x02);
+	overrun = (value & 0x01);
+
+	return status;
+}
+
+int ADXL345::set_int_map(bool data_ready, bool single_tap, bool double_tap, bool activity, bool inactivity, bool free_fall, bool watermark, bool overrun) {
+	unsigned char value = 0;
+
+	value = (data_ready << 7) |
+			(single_tap << 6) |
+			(double_tap << 5) |
+			(activity << 4) |
+			(inactivity << 3) |
+			(free_fall << 2) |
+			(watermark << 1) |
+			(overrun);
+
+	return write_byte(ADXL345_INT_MAP,value);
+}
+
+int ADXL345::get_int_source(bool &data_ready, bool &single_tap, bool &double_tap, bool &activity, bool &inactivity, bool &free_fall, bool &watermark, bool &overrun) {
+	unsigned char value = 0;
+	int status = read_byte(ADXL345_INT_SOURCE,value);
+
+	data_ready = (value & 0x80);
+	single_tap = (value & 0x40);
+	double_tap = (value & 0x20);
+	activity = (value & 0x10);
+	inactivity = (value & 0x08);
+	free_fall = (value & 0x04);
+	watermark = (value & 0x02);
+	overrun = (value & 0x01);
+
+	return status;
+}
+
+int ADXL345::get_data_format(bool &self_test, bool &spi, bool &int_invert, bool &full_res, bool &justify, unsigned char &range) {
+	unsigned char value = 0;
+	int status = read_byte(ADXL345_DATA_FORMAT,value);
+
+	self_test = (value & 0x80);
+	spi = (value & 0x40);
+	int_invert = (value & 0x20);
+	full_res = (value & 0x08);
+	justify = (value & 0x04);
+	range = (value & 0x03);
+
+	return status;
+}
+
+int ADXL345::set_data_format(bool self_test, bool spi, bool int_invert, bool full_res, bool justify, unsigned char range) {
+	unsigned char value = 0;
+
+	value = (self_test << 7) |
+			(spi << 6) |
+			(int_invert << 5) |
+			(full_res << 3) |
+			(justify << 2) |
+			(range & 0x03);
+
+	return write_byte(ADXL345_DATA_FORMAT,value);
+}
+
+int ADXL345::get_data_x_raw(short int &x) {
+	unsigned char lsb = 0;
+	unsigned char hsb = 0;
+
+	int status = read_byte(ADXL345_DATAX0,lsb);
+	status += read_byte(ADXL345_DATAX0,hsb);
+
+	x = ((short int)hsb << 8) | lsb;
+
+	return status;
+} 
+
+int ADXL345::get_data_y_raw(short int &y) {
+	unsigned char lsb = 0;
+	unsigned char hsb = 0;
+
+	int status = read_byte(ADXL345_DATAY0,lsb);
+	status += read_byte(ADXL345_DATAY0,hsb);
+
+	y = ((short int)hsb << 8) | lsb;
+
+	return status;
+}
+
+int ADXL345::get_data_z_raw(short int &z) {
+	unsigned char lsb = 0;
+	unsigned char hsb = 0;
+
+	int status = read_byte(ADXL345_DATAZ0,lsb);
+	status += read_byte(ADXL345_DATAZ0,hsb);
+
+	z = ((short int)hsb << 8) | lsb;
+
+	return status;
+}
+//FIFO_CTL
+//FIFO_STATUS
 #endif
