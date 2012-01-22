@@ -18,14 +18,14 @@ using namespace std;
 class I2C {
 
 	protected:
-		int fd;
+		int fdr;
+		int fdw;
 		char buf[10];
 		int status;
 
 	public:
-		I2C(int i,int addr);
+		I2C(int i,int addr_r,int addr_w);
 
-		int bus_init(int channel, int addr);
 		int get_status();
 		int write_address(unsigned char reg);
 		int write_byte(unsigned char reg, unsigned char data);
@@ -35,30 +35,38 @@ class I2C {
 
 };
 
-I2C::I2C(int channel, int addr) {
-	bus_init(channel, addr);
-}
-
-int I2C::bus_init(int channel,int addr) {
-
+I2C::I2C(int channel, int addr_r, int addr_w=-1) {
 	char file[40];
 	sprintf(file,"/dev/i2c-%d",channel);
 
-	if((fd = open(file,O_RDWR)) < 0) {
+	if((fdr = open(file,O_RDWR)) < 0) {
 		cout << "ERROR Opening File" << endl;
 		status = -1;
-		return status;
 	}
 
-	if(ioctl(fd,I2C_SLAVE,addr) < 0) {
+	if(ioctl(fdr,I2C_SLAVE,addr_r) < 0) {
 		cout << "ERROR Opening Device" << endl;
 		status = -1;
-		return status;
+	}
+
+	if(addr_w == -1) {
+		fdw = fdr;
+	} else {
+		if((fdw = open(file,O_RDWR)) < 0) {
+			cout << "ERROR Opening File" << endl;
+			status = -1;
+		}
+
+		if(ioctl(fdw,I2C_SLAVE,addr_w) < 0) {
+			cout << "ERROR Opening Device" << endl;
+			status = -1;
+		}
+
 	}
 
 	status = 0;
-	return status;
 }
+
 
 int I2C::get_status() {
 	return status;
@@ -67,7 +75,7 @@ int I2C::get_status() {
 int I2C::write_address(unsigned char reg) {
 	buf[0] = reg;
 
-	if(write(fd,buf,1) != 1) {
+	if(write(fdw,buf,1) != 1) {
 		return -1;
 	}
 	return 0;
@@ -77,7 +85,7 @@ int I2C::write_byte(unsigned char reg, unsigned char data) {
 	buf[0] = reg;
 	buf[1] = data;
 
-	if(write(fd,buf,2) != 2) {
+	if(write(fdw,buf,2) != 2) {
 		return -1;
 	}
 	return 0;
@@ -100,7 +108,7 @@ int I2C::write_masked_byte(unsigned char reg, unsigned char data, unsigned char 
 
 
 int I2C::read_current_byte(unsigned char &data) {
-	if(read(fd,buf,1) != 1) {
+	if(read(fdr,buf,1) != 1) {
 		return -1;
 	}
 

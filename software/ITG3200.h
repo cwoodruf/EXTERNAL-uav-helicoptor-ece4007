@@ -90,9 +90,6 @@ class ITG3200 : public I2C {
 		ITG3200();
 		ITG3200(int channel);
 		ITG3200(int channel,int addr);
-		int reconnect();
-		int reconnect(int channel);
-		int reconnect(int channel, int addr);
 
 		int get_whoami(unsigned char &addr);
 		int get_sample_rate_divider(unsigned char &div);
@@ -111,28 +108,16 @@ class ITG3200 : public I2C {
 
 };
 
-ITG3200::ITG3200() : I2C(2,ITG3200_ADR_ADO_LO) {
+ITG3200::ITG3200() : I2C(2,ITG3200_ADR_ADO_HI) {
 
 }
 
-ITG3200::ITG3200(int channel) : I2C(channel,ITG3200_ADR_ADO_LO) {
+ITG3200::ITG3200(int channel) : I2C(channel,ITG3200_ADR_ADO_HI) {
 
 }
 
 ITG3200::ITG3200(int channel,int addr) : I2C(channel,addr) {
 
-}
-
-int ITG3200::reconnect() {
-	return bus_init(2,ITG3200_ADR_ADO_LO);
-}
-
-int ITG3200::reconnect(int channel) {
-	return bus_init(channel,ITG3200_ADR_ADO_LO);
-}
-
-int ITG3200::reconnect(int channel, int addr) {
-	return bus_init(channel,addr);
 }
 
 int ITG3200::get_whoami(unsigned char &addr) {
