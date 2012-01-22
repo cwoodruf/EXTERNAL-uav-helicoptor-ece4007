@@ -54,7 +54,8 @@ using namespace std;
 #define ADXL345_INT_OVERRUNY_BIT	0x00
 
 //IDs
-#define ADXL345_ID					0x53
+#define ADXL345_ID_R				0xA7
+#define ADXL345_ID_W				0xA6
 
 
 class ADXL345 : public I2C {
@@ -62,10 +63,14 @@ class ADXL345 : public I2C {
 	private:
 		unsigned char range;
 	public:
+		//Constructors
 		ADXL345();
 		ADXL345(int i);
+
+		//Destructor
 		~ADXL345();	
 
+		//Spec Implementations
 		int get_dev_id(unsigned char &id);
 		int get_thresh_tap(unsigned short int &thresh_tap);
 		int get_thresh_tap_raw(unsigned char &thresh_tap);
@@ -138,14 +143,19 @@ class ADXL345 : public I2C {
 		int get_data_z_raw(short int &z);
 
 
+		//High Level Functions
+		int set_standby_mode();
+        int set_measurement_mode();
+        int set_full_res();
+
 };
 
-ADXL345::ADXL345() : I2C(2,ADXL345_ID) {
+ADXL345::ADXL345() : I2C(2,ADXL345_ID_R,ADXL345_ID_W) {
 	bool dummy;
 	get_data_format(dummy,dummy,dummy,dummy,dummy,this->range);
 }
 
-ADXL345::ADXL345(int i) : I2C(i,ADXL345_ID) {
+ADXL345::ADXL345(int i) : I2C(i,ADXL345_ID_R,ADXL345_ID_W) {
 	bool dummy;
 	get_data_format(dummy,dummy,dummy,dummy,dummy,this->range);
 }
@@ -702,4 +712,30 @@ int ADXL345::get_data_z_raw(short int &z) {
 }
 //FIFO_CTL
 //FIFO_STATUS
+
+int ADXL345::set_standby_mode() {
+	bool link, auto_sleep, measure, sleep;
+	unsigned char wakeup;
+	int status = get_power_ctl(link,auto_sleep,measure,sleep,wakeup);
+	status += set_power_ctl(link,auto_sleep,false,sleep,wakeup);
+	return status;
+}
+
+int ADXL345::set_measurement_mode() {
+	bool link, auto_sleep, measure, sleep;
+	unsigned char wakeup;
+	int status = get_power_ctl(link,auto_sleep,measure,sleep,wakeup);
+	status += set_power_ctl(link,auto_sleep,true,sleep,wakeup);
+	return status;
+}
+
+int ADXL345::set_full_res() {
+	bool self_test, spi, int_invert, full_res, justify;
+	unsigned char range;
+	int status = get_data_format(self_test,spi,int_invert,full_res,justify,range);
+	status += set_data_format(self_test,spi,int_invert,true,justify,0x3);
+	return status;
+}
+
+
 #endif
