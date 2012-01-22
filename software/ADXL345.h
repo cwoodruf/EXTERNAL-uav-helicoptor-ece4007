@@ -710,7 +710,6 @@ int ADXL345::get_data_z_raw(short int &z) {
 
 	return status;
 }
-//FIFO_STATUS
 
 int ADXL345::set_standby_mode() {
 	bool link, auto_sleep, measure, sleep;
