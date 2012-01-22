@@ -736,6 +736,4 @@ int ADXL345::set_full_res() {
 	status += set_data_format(self_test,spi,int_invert,true,justify,0x3);
 	return status;
 }
-
-
 #endif
