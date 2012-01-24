@@ -2,7 +2,7 @@
 #define ADXL345_2_H
 
 #include "I2C.h"
-#include "util.h"
+#include "../util.h"
 #include <iostream>
 
 using namespace std;
