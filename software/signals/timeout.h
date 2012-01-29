@@ -3,24 +3,37 @@
 #include <string.h>
 #include <sys/time.h>
 
-class Ticker {
+class Timeout {
 
 	private:
 		struct sigaction sa;
 		struct itimerval timer;
 
 	public:
-		Ticker();
+		Timeout();
+		Timeout(void (*fptr)(int), double t);
+		Timeout(void (*fptr)(int), unsigned int t);
 
-		void attach(void (*fptr)(int), double t);
-		void attach_us(void (*fptr)(int), unsigned int t);
-		void detach();
+		void setup(void (*fptr)(int),double t);
+		void setup(void (*fptr)(int),unsigned int t);
+		void start();
+		void stop();
+		void clear();
 };
 
-Ticker::Ticker() {
+Timeout::Timeout() {
+
 }
 
-void Ticker::attach(void (*fptr)(int), double t) {
+Timeout::Timeout(void (*fptr)(int),double t) {
+	setup(fptr,t);
+}
+
+Timeout::Timeout(void (*fptr)(int), unsigned int t) {
+	setup(fptr,t);
+}
+
+void Timeout::setup(void (*fptr)(int),double t) {
 
 	unsigned int sec = (unsigned int)t;
 	unsigned int usec = (unsigned int)((t-sec)*1000000);
@@ -32,13 +45,12 @@ void Ticker::attach(void (*fptr)(int), double t) {
 
 	timer.it_value.tv_sec = sec;
 	timer.it_value.tv_usec = usec;
-	timer.it_interval.tv_sec = sec;
-	timer.it_interval.tv_usec = usec;
+	timer.it_interval.tv_sec = 0;
+	timer.it_interval.tv_usec = 0;
 
-	setitimer(ITIMER_VIRTUAL, &timer, NULL);
 }
 
-void Ticker::attach_us(void (*fptr)(int), unsigned int t) {
+void Timeout::setup(void (*fptr)(int), unsigned int t) {
 	memset(&sa, 0, sizeof(sa));
 	sa.sa_handler = fptr;
 	sigaction(SIGVTALRM, &sa, NULL);
@@ -47,16 +59,18 @@ void Ticker::attach_us(void (*fptr)(int), unsigned int t) {
 	timer.it_value.tv_sec = 0;
 	timer.it_value.tv_usec = t;
 	timer.it_interval.tv_sec = 0;
-	timer.it_interval.tv_usec = t;
+	timer.it_interval.tv_usec = 0;
 
+}
+
+void Timeout::start() {
 	setitimer(ITIMER_VIRTUAL, &timer, NULL);
 }
 
-void Ticker::detach() {
+void Timeout::clear() {
 	timer.it_value.tv_sec = 0;
 	timer.it_value.tv_usec = 0;
 	timer.it_interval.tv_sec = 0;
 	timer.it_interval.tv_usec = 0;
-
 	setitimer(ITIMER_VIRTUAL, &timer, NULL);
 }
