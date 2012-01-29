@@ -1,9 +1,12 @@
 #ifndef UTIL_H
 #define UTIL_H
 
+#include <stdint.h>
+
 #define MIN(a,b) ((a) < (b)) ? (a) : (b) 
 #define MAX(a,b) ((a) > (b)) ? (a) : (b)
 #define LIMIT(l,v,u) MIN(MAX((v),(l)),(u))
+#define ABSV(a)  ((a) < 0) ? -(a) : (a)
 
 
 template <typename T>
@@ -27,5 +30,10 @@ U scale(T value, float factor, bool scaleup) {
 	}
 	
 	return res;
+}
+
+bool inDeadBand(int64_t valueA, int64_t valueB, int64_t thresh) {
+
+	return (ABSV(valueA-valueB) < thresh);
 }
 #endif
