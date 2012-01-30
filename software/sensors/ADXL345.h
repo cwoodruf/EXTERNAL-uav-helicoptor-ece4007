@@ -247,7 +247,7 @@ int ADXL345::get_offset_y_raw(unsigned char &offset_y) {
 int ADXL345::set_offset_y(short int offset_y) {
 	offset_y = LIMIT(-2000,offset_y,2000);
 	unsigned char value = scale<short int,unsigned char>(offset_y,15.6,false);
-	return write_byte(ADXL345_OFSY,offset_y);
+	return write_byte(ADXL345_OFSY,value);
 }
 
 int ADXL345::set_offset_y_raw(unsigned char offset_y) {
@@ -271,7 +271,7 @@ int ADXL345::get_offset_z_raw(unsigned char &offset_z) {
 int ADXL345::set_offset_z(short int offset_z) {
 	offset_z = LIMIT(-2000,offset_z,2000);
 	unsigned char value = scale<short int,unsigned char>(offset_z,15.6,false);
-	return write_byte(ADXL345_OFSZ,offset_z);
+	return write_byte(ADXL345_OFSZ,value);
 }
 
 int ADXL345::set_offset_z_raw(unsigned char offset_z) {

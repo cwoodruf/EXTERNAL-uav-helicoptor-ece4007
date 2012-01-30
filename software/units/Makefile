@@ -2,7 +2,7 @@
 CXX 		= /usr/bin/g++
 CXXFLAGS 	= -Wall -g
 
-all: testTicker testTimeout testPID testUtil
+all: testTicker testTimeout testPID testUtil testADXL
 
 testTicker:	test_ticker.o
 	$(CXX) $(CXXFLAGS) -o ticker test_ticker.o
@@ -13,13 +13,17 @@ testTimeout: test_timeout.o
 	@rm -f *.o
 
 testPID: test_pid.o
-	$(CXX) $(CXXFLAGS) -o PID test_pid.o
+	$(CXX) $(CXXFLAGS) -o pid test_pid.o
 	@rm -f *.o
 
 testUtil:	test_util.o
 	$(CXX) $(CXXFLAGS) -o util test_util.o
 	@rm -f *.o
 
+testADXL:	test_adxl345.o
+	$(CXX) $(CXXFLAGS) -o adxl345 test_adxl345.o
+	@rm -f *.o
+
 
 clean:
-	@rm -f *.o ticker timeout PID util
+	@rm -f *.o ticker timeout pid util adxl345
