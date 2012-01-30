@@ -1,5 +1,5 @@
-#ifndef ADXL345_2_H
-#define ADXL345_2_H
+#ifndef ADXL345_H
+#define ADXL345_H
 
 #include "I2C.h"
 #include "../util.h"
