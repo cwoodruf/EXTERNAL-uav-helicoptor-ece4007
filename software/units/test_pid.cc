@@ -1,5 +1,5 @@
 #include "../controls/pid.h"
-#include "../signals/ticker.h"
+#include "../time/ticker.h"
 
 #include <iostream>
 #include <string.h>
