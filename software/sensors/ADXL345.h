@@ -56,6 +56,7 @@ using namespace std;
 //IDs
 #define ADXL345_ID_R				0xA7
 #define ADXL345_ID_W				0xA6
+#define ADXL345_ID					0x53
 
 
 class ADXL345 : public I2C {
@@ -66,6 +67,8 @@ class ADXL345 : public I2C {
 		//Constructors
 		ADXL345();
 		ADXL345(int i);
+		ADXL345(bool);
+		ADXL345(int i, bool);
 
 		//Destructor
 		~ADXL345();	
@@ -150,12 +153,22 @@ class ADXL345 : public I2C {
 
 };
 
-ADXL345::ADXL345() : I2C(2,ADXL345_ID_R,ADXL345_ID_W) {
+ADXL345::ADXL345() : I2C(3,ADXL345_ID) {
 	bool dummy;
 	get_data_format(dummy,dummy,dummy,dummy,dummy,this->range);
 }
 
-ADXL345::ADXL345(int i) : I2C(i,ADXL345_ID_R,ADXL345_ID_W) {
+ADXL345::ADXL345(int i) : I2C(i,ADXL345_ID) {
+	bool dummy;
+	get_data_format(dummy,dummy,dummy,dummy,dummy,this->range);
+}
+
+ADXL345::ADXL345(bool) : I2C(3,ADXL345_ID_R,ADXL345_ID_W) {
+	bool dummy;
+	get_data_format(dummy,dummy,dummy,dummy,dummy,this->range);
+}
+
+ADXL345::ADXL345(int i,bool) : I2C(i,ADXL345_ID_R,ADXL345_ID_W) {
 	bool dummy;
 	get_data_format(dummy,dummy,dummy,dummy,dummy,this->range);
 }
