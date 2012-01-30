@@ -9,7 +9,7 @@ using namespace std;
 
 #define MIN(a,b) ((a) < (b)) ? (a) : (b) 
 #define MAX(a,b) ((a) > (b)) ? (a) : (b)
-#define LIMIT(l,v,u) MIN(MAX((v),(l)),(u))
+#define LIMIT(l,v,u) (MIN(MAX((v),(l)),(u)))
 #define ABSV(a)  ((a) < 0) ? -(a) : (a)
 
 
@@ -43,7 +43,7 @@ U scale(T value, float factor, bool scaleup) {
 	if(scaleup) {
 		res = (U)((((long long)value*f)+500)/1000);
 	} else {
-		res = (U)((((long long)value*1000)-500)/f);
+		res = (U)((((long long)value*1000))/f);
 	}
 	
 	return res;
@@ -96,7 +96,7 @@ bool toff_delay(T_TONDelay &toff, bool in) {
 	return toff.out;
 }
 
-
+//Helper
 int16_t interp_2d(T_CharCurvePoint *pt1, T_CharCurvePoint *pt2, uint16_t x) {
 	int16_t dx = (int16_t)pt2->x - (int16_t)pt1->x;
 	int16_t dy = pt2->y - pt1->y;
@@ -109,23 +109,11 @@ int16_t char_curve(T_CharCurvePoint *curve, uint16_t x) {
 	T_CharCurvePoint *pt1 = curve;
 	T_CharCurvePoint *pt2;
 
-	while(pt1->x > x) {
+	while(pt1->x < x) {
 		++pt1;
 	}
 
 	pt2 = pt1 - 1;
-	return interp_2d(pt1,pt2,x);
-}
-
-int16_t reverse_char_curve(T_CharCurvePoint *curve, uint16_t x) {
-	T_CharCurvePoint *pt1;
-	T_CharCurvePoint *pt2 = curve;
-
-	while(pt2->x <= x) {
-		pt2++;
-	}
-
-	pt1 = pt2 - 1;
 	return interp_2d(pt1,pt2,x);
 }
 

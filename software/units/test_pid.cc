@@ -14,7 +14,7 @@ void control_loop(int sig) {
 	static unsigned short int value = 0;
 	unsigned short int out = 0;
 
-	if(!inDeadBand(1234,value,2)) {
+	if(!inDeadBand(1234,value,5)) {
 		if(pid.regulate(1234,value,out) != 0) {
 			cout << "ERROR" << endl;
 		}
