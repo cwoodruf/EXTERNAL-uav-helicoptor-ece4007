@@ -32,23 +32,27 @@
 
 using namespace std;
 
+int register_timeout(void (*func)(),double time,bool reschedule);
+
 namespace timeout {
 
 	struct TimeoutNode {
 		void (*cb)();
 		double diff;
+		double time;
+		bool reschedule;
 	};
 
 	List<TimeoutNode> toList;
 	struct itimerval itimer;
-	struct sigaction saction;
 	double currentTime;
 
 	void dispatcher(int sig) {
 		TimeoutNode to;
 		toList.pop_front(to);
 		to.cb();
-			
+
+
 		if(!toList.isEmpty()) {
 			ListIterator<TimeoutNode> it=toList.begin();
 
@@ -71,29 +75,25 @@ namespace timeout {
 			itimer.it_value.tv_usec = us;
 			itimer.it_interval.tv_sec = 0;
 			itimer.it_interval.tv_usec = 0;
-			setitimer(ITIMER_VIRTUAL,&timeout::itimer,0);
+			setitimer(ITIMER_REAL,&timeout::itimer,0);
+			signal(SIGALRM, dispatcher);
+
 
 		}
+		if(to.reschedule) register_timeout(to.cb,to.time,true);
 	}
 }
 
 
-int register_timeout(void (*func)(),double time) {
-	static bool first_run = true;
-
-	if(first_run) {
-		memset(&timeout::saction,0,sizeof(timeout::saction));
-		timeout::saction.sa_handler = timeout::dispatcher;
-		sigaction(SIGVTALRM,&timeout::saction,0);
-		first_run = false;
-	}
-
+int register_timeout(void (*func)(),double time,bool reschedule=false) {
 
 	timeout::TimeoutNode to;
 
 	if(timeout::toList.isEmpty()) {
 		to.cb = func;
 		to.diff = 0;
+		to.reschedule = reschedule;
+		to.time = time;
 		timeout::toList.push(to);
 		timeout::currentTime = time;
 
@@ -104,7 +104,8 @@ int register_timeout(void (*func)(),double time) {
 		timeout::itimer.it_interval.tv_sec = 0;
 		timeout::itimer.it_interval.tv_usec = 0;
 
-		setitimer(ITIMER_VIRTUAL,&timeout::itimer,0);
+		setitimer(ITIMER_REAL,&timeout::itimer,0);
+		signal(SIGALRM, timeout::dispatcher);
 		return 0;
 	}
 
@@ -129,7 +130,9 @@ int register_timeout(void (*func)(),double time) {
 		timeout::itimer.it_interval.tv_sec = 0;
 		timeout::itimer.it_interval.tv_usec = 0;
 
-		setitimer(ITIMER_VIRTUAL,&timeout::itimer,0);
+		setitimer(ITIMER_REAL,&timeout::itimer,0);
+		signal(SIGALRM, timeout::dispatcher);
+
 
 	} else {
 		int place = 0;

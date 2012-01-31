@@ -21,7 +21,7 @@
 */
 
 #include "../controls/pid.h"
-#include "../time/ticker.h"
+#include "../time/timeout.h"
 
 #include <iostream>
 #include <string.h>
@@ -31,7 +31,7 @@ using namespace std;
 
 PID pid;
 
-void control_loop(int sig) {
+void control_loop() {
 
 	static unsigned short int value = 0;
 	unsigned short int out = 0;
@@ -50,19 +50,17 @@ void control_loop(int sig) {
 		cout << "In Deadband at: " << value << endl;
 	}
 
-
 }
 
 
 int main(int argc, char **argv) {
-	Ticker t;
 
 	if(pid.init(40,50,0,50,100) < 0) {
 		cout << "Warning Unstable PID Parameters" << endl;
 		return -1;
 	}
 
-	t.attach(control_loop,0.050);
+	register_timeout(control_loop,0.05,true);
 	
 	while(1) {;}
 	return 0;
