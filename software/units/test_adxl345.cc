@@ -20,7 +20,7 @@
 * OTHER DEALINGS IN THE SOFTWARE.
 */
 #include "../sensors/ADXL345.h"
-#include "../time/ticker.h"
+#include "../time/timeout.h"
 #include <iostream>
 #include <stdlib.h>
 
@@ -29,7 +29,7 @@ using namespace std;
 ADXL345 accel;
 
 
-void print_data(int sig) {
+void print_data() {
 	short int x=0, y=0, z=0;
     accel.get_data_x_raw(x);
     accel.get_data_y_raw(y); 
@@ -41,8 +41,6 @@ void print_data(int sig) {
 }
 
 int main() {
-	Ticker t;
-	t.attach(print_data,0.5);
 
     //Verify connection to chip and bus by checking device id
     unsigned char id = 0;
@@ -58,6 +56,8 @@ int main() {
 
     //Set the device in measurement mode
     accel.set_measurement_mode();
+
+	register_timeout(print_data,0.05,true);
 
     while(1) {;}
 
