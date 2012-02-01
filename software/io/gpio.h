@@ -123,7 +123,7 @@ namespace gpio {
 		p.name = "GPIO1_28"; p.gpio = GPIO_1+28; p.mux = "gpmc_ben1"; Bone.put("P9_12",p);
 		p.name = "UART4_TXD"; p.gpio = GPIO_0+31; p.mux = "gpmc_wpn"; Bone.put("P9_13",p);
 		p.name = "EHRPWM1A"; p.gpio = GPIO_1+18; p.mux = "gpmc_a2"; Bone.put("P9_14",p);
-		p.name = "UART3_RXD"; p.gpio = GPIO_2+18; p.mux = "mii1_rxd3"; Bone.put("P9_15",p);
+		p.name = "UART3_RXD"; p.gpio = GPIO_1+16; p.mux = "mii1_rxd3"; Bone.put("P9_15",p);
 		p.name = "EHRPWM1B"; p.gpio = GPIO_1+19; p.mux = "gpmc_a3"; Bone.put("P9_16",p);
 		p.name = "I2C1_SCL"; p.gpio = GPIO_0+5; p.mux = "spi0_cs0"; Bone.put("P9_17",p);
 		p.name = "I2C1_SDA"; p.gpio = GPIO_0+4; p.mux = "spi0_d1"; Bone.put("P9_18",p);
