@@ -33,6 +33,8 @@ int main(int argc, char **argv) {
 
 	register_timeout(blink,atof(argv[1]),true);
 
+	cout << "Blinking at " << (1/atof(argv[1])) << " Hz - 50\% Duty Cycle" << endl; 
+
 	while(go) {
 		;
 	}
