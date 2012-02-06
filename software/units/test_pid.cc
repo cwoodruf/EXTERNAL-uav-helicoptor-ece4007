@@ -21,7 +21,7 @@
 */
 
 #include "../controls/pid.h"
-#include "../time/timeout.h"
+#include "../events/timeout.h"
 
 #include <iostream>
 #include <string.h>
