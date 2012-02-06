@@ -38,6 +38,8 @@ void print_data() {
          << "Y: " << y << "\t"
          << "Z: " << z << "\t"
          << endl;
+
+	register_timeout(print_data,0.05);
 }
 
 int main() {
@@ -57,7 +59,7 @@ int main() {
     //Set the device in measurement mode
     accel.set_measurement_mode();
 
-	register_timeout(print_data,0.05,true);
+	register_timeout(print_data,0.05);
 
     while(1) {;}
 

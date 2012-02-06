@@ -36,128 +36,117 @@ int register_timeout(void (*func)(),double time,bool reschedule);
 
 namespace timeout {
 
+
+	void dispatcher(int sig);
+
 	struct TimeoutNode {
 		void (*cb)();
 		double diff;
-		double time;
-		bool reschedule;
 	};
 
 	List<TimeoutNode> toList;
 	struct itimerval itimer;
-	double currentTime;
+	double TO;
+	double epsilon = 1e-9;
+
+	void setup_alarm(double time) {
+		unsigned int s = (unsigned int)time;
+		unsigned int us = (unsigned int)((time-s)*1e6);
+
+		itimer.it_value.tv_sec = s;
+		itimer.it_value.tv_usec = us;
+		itimer.it_interval.tv_sec = 0;
+		itimer.it_interval.tv_usec = 0;
+		setitimer(ITIMER_REAL,&itimer,0);
+		signal(SIGALRM,dispatcher);
+	}
 
 	void dispatcher(int sig) {
-		TimeoutNode to;
-		toList.pop_front(to);
-		to.cb();
+		TimeoutNode node;
+		List<TimeoutNode> callList;
 
+		toList.get(node,0);
+		while(node.diff == 0 && !toList.isEmpty()) {
+			toList.pop_front(node);
+			callList.push(node);
+			toList.get(node,0);
+		}
 
 		if(!toList.isEmpty()) {
-			ListIterator<TimeoutNode> it=toList.begin();
+			TO = node.diff;
 
-			while((*it).diff == 0) {
-				toList.pop_front(to);
-				to.cb();
-				it=toList.begin();
-			}
-		
-			currentTime = (*it).diff;
-
+			ListIterator<TimeoutNode> it = toList.begin();
 			for(;it!=toList.end();++it) {
-				(*it).diff = (*it).diff - currentTime;
+				(*it).diff = (*it).diff - TO;
+				(*it).diff = ((*it).diff < epsilon) ? 0 : (*it).diff;
 			}
-			(*it).diff = (*it).diff - currentTime;
+			(*it).diff = (*it).diff - TO;
+			(*it).diff = ((*it).diff < epsilon) ? 0 : (*it).diff;
 
-			unsigned int s = (unsigned int)currentTime;
-			unsigned int us = (unsigned int)((currentTime-s)*1000000);
-			itimer.it_value.tv_sec = s;
-			itimer.it_value.tv_usec = us;
-			itimer.it_interval.tv_sec = 0;
-			itimer.it_interval.tv_usec = 0;
-			setitimer(ITIMER_REAL,&timeout::itimer,0);
-			signal(SIGALRM, dispatcher);
-
-
+			setup_alarm(TO);
 		}
-		if(to.reschedule) register_timeout(to.cb,to.time,true);
+
+			ListIterator<TimeoutNode> it = callList.begin();
+			for(;it!=callList.end();++it) {
+				(*it).cb();
+			}
+			(*it).cb();
 	}
 }
 
 
-int register_timeout(void (*func)(),double time,bool reschedule=false) {
+void register_timeout(void (*func)(), double time) {
 
-	timeout::TimeoutNode to;
+	timeout::TimeoutNode elem;
+	elem.cb = func;
 
 	if(timeout::toList.isEmpty()) {
-		to.cb = func;
-		to.diff = 0;
-		to.reschedule = reschedule;
-		to.time = time;
-		timeout::toList.push(to);
-		timeout::currentTime = time;
-
-		unsigned int s = (unsigned int)time;
-		unsigned int us = (unsigned int)((time-s)*1000000);
-		timeout::itimer.it_value.tv_sec = s;
-		timeout::itimer.it_value.tv_usec = us;
-		timeout::itimer.it_interval.tv_sec = 0;
-		timeout::itimer.it_interval.tv_usec = 0;
-
-		setitimer(ITIMER_REAL,&timeout::itimer,0);
-		signal(SIGALRM, timeout::dispatcher);
-		return 0;
-	}
-
-	ListIterator<timeout::TimeoutNode> it=timeout::toList.begin();
-	
-	//is front?
-	if(time < ((*it).diff+timeout::currentTime)) {
-		for(;it!=timeout::toList.end();++it) {
-			(*it).diff = (*it).diff + timeout::currentTime - time;
-		}
-		(*it).diff = (*it).diff + timeout::currentTime - time;
-
-		to.diff = 0;
-		to.cb = func;
-		timeout::toList.push_front(to);
-		timeout::currentTime = time;
-
-		unsigned int s = (unsigned int)time;
-		unsigned int us = (unsigned int)((time-s)*1000000);
-		timeout::itimer.it_value.tv_sec = s;
-		timeout::itimer.it_value.tv_usec = us;
-		timeout::itimer.it_interval.tv_sec = 0;
-		timeout::itimer.it_interval.tv_usec = 0;
-
-		setitimer(ITIMER_REAL,&timeout::itimer,0);
-		signal(SIGALRM, timeout::dispatcher);
-
-
+		timeout::TO = time;
+		elem.diff = 0;
+		timeout::toList.push(elem);
+		timeout::setup_alarm(timeout::TO);
 	} else {
-		int place = 0;
-		bool found = false;
-		to.diff = time - timeout::currentTime;
-		to.cb = func;
+		double d = time - timeout::TO;
 
-		for(;it!=timeout::toList.end();++it) {
-			if(time <= (*it).diff + timeout::currentTime) {
-				found = true;
-				break;
+		if(d < 0) {
+			elem.diff = 0;
+			timeout::TO = time;
+
+			ListIterator<timeout::TimeoutNode> it = timeout::toList.begin();
+			for(;it!=timeout::toList.end();++it) {
+				(*it).diff = (*it).diff - d;
+				(*it).diff = ((*it).diff < timeout::epsilon) ? 0 : (*it).diff;
 			}
-			++place;
-		}
-		if(!found) {
-			if(time > (*it).diff + timeout::currentTime) {
-				timeout::toList.push(to);	
-			} else {
-				timeout::toList.insert(to,place);
-			}
+			(*it).diff = (*it).diff - d;
+			(*it).diff = ((*it).diff < timeout::epsilon) ? 0 : (*it).diff;
+
+			timeout::toList.push_front(elem);
+			timeout::setup_alarm(timeout::TO);
 		} else {
-			timeout::toList.insert(to,place);
+			elem.diff = d;
+
+			ListIterator<timeout::TimeoutNode> it = timeout::toList.begin();
+			int i = 0;
+			bool found = false;
+			for(;it!=timeout::toList.end();++it) {
+				if(d < (*it).diff) {
+					found = true;
+					break;
+				}
+				++i;
+			}
+			if(found) {
+				timeout::toList.insert(elem,i);
+			} else {
+				if(d < (*it).diff) {
+					timeout::toList.insert(elem,i);
+				} else {
+					timeout::toList.push(elem);
+				}
+			}
+		
 		}
 	}
-
-	return 0;
 }
+
 #endif

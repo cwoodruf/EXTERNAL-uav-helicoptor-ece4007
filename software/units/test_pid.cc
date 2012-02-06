@@ -50,6 +50,7 @@ void control_loop() {
 		cout << "In Deadband at: " << value << endl;
 	}
 
+	register_timeout(control_loop,0.05);
 }
 
 
@@ -60,7 +61,7 @@ int main(int argc, char **argv) {
 		return -1;
 	}
 
-	register_timeout(control_loop,0.05,true);
+	register_timeout(control_loop,0.05);
 	
 	while(1) {;}
 	return 0;

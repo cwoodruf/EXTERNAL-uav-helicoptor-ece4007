@@ -28,10 +28,11 @@ using namespace std;
 void run_on_timeout() {
     static int count = 1;
     cout << "Timer has run " << count++ << " times" << endl;
+    register_timeout(run_on_timeout,1.0);
 }
 
 int main() {
-    register_timeout(run_on_timeout,1.0,true);
+    register_timeout(run_on_timeout,1.0);
 
     //Busy work
     while(1) {}
