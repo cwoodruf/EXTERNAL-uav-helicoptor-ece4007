@@ -32,10 +32,8 @@
 
 using namespace std;
 
-int register_timeout(void (*func)(),double time,bool reschedule);
 
 namespace timeout {
-
 
 	void dispatcher(int sig);
 
@@ -86,11 +84,11 @@ namespace timeout {
 			setup_alarm(TO);
 		}
 
-			ListIterator<TimeoutNode> it = callList.begin();
-			for(;it!=callList.end();++it) {
-				(*it).cb();
-			}
+		ListIterator<TimeoutNode> it = callList.begin();
+		for(;it!=callList.end();++it) {
 			(*it).cb();
+		}
+		(*it).cb();
 	}
 }
 

@@ -20,7 +20,7 @@
 * OTHER DEALINGS IN THE SOFTWARE.
 */
 #include "../sensors/ADXL345.h"
-#include "../time/timeout.h"
+#include "../events/timeout.h"
 #include <iostream>
 #include <stdlib.h>
 
