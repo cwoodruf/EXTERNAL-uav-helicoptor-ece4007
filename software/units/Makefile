@@ -22,7 +22,7 @@
 CXX 		= /usr/bin/g++
 CXXFLAGS 	= -Wall -g
 
-all: testTicker testTimeout testPID testUtil testADXL testList testHashTable testCircularBuffer testGPIO
+all: testTicker testTimeout testPID testUtil testADXL testList testHashTable testCircularBuffer testGPIO testVector testPubsub
 
 testTicker:	test_ticker.o
 	$(CXX) $(CXXFLAGS) -o ticker test_ticker.o
@@ -60,6 +60,14 @@ testGPIO: test_gpio.o
 	$(CXX) $(CXXFLAGS) -o blink test_gpio.o
 	@rm -f *.o
 
+testVector: test_vector.o
+	$(CXX) $(CXXFLAGS) -o vec test_vector.o
+	@rm -f *.o
+
+testPubsub: test_pubsub.o
+	$(CXX) $(CXXFLAGS) -o pubsub test_pubsub.o
+	@rm -f *.o
+
 
 clean:
-	@rm -f *.o ticker timeout pid util adxl345 list hash cbuf blink
+	@rm -f *.o ticker timeout pid util adxl345 list hash cbuf blink vec pubsub

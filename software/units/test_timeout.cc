@@ -32,6 +32,7 @@ void funcA() {
 
 void funcB() {
 	cout << "funcB" << endl;
+	register_timeout(funcB,0.1);
 }
 
 void funcC() {

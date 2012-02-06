@@ -305,7 +305,9 @@ int List<T>::get(T &data,int index) {
 		node = node->next;
 	}
 
-	return node->data;
+	data = node->data;
+
+	return 0;
 }
 
 template <typename T>
