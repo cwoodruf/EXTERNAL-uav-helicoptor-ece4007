@@ -1,0 +1,18 @@
+--- .config	2010-09-07 11:43:39.000000000 -0400
++++ .config	2012-02-11 16:43:03.133073176 -0500
+@@ -20,13 +20,14 @@
+ #CFLAGS += -I../../madwifi # change to the madwifi source directory
+ 
+ # Driver interface for drivers using the nl80211 kernel interface
+-#CONFIG_DRIVER_NL80211=y
++CONFIG_DRIVER_NL80211=y
+ # driver_nl80211.c requires a rather new libnl (version 1.1) which may not be
+ # shipped with your distribution yet. If that is the case, you need to build
+ # newer libnl version and point the hostapd build to use it.
+ #LIBNL=/usr/src/libnl
+ #CFLAGS += -I$(LIBNL)/include
+ #LIBS += -L$(LIBNL)/lib
++CFLAGS += -I/usr/local/include
+ 
+ # Driver interface for FreeBSD net80211 layer (e.g., Atheros driver)
+ #CONFIG_DRIVER_BSD=y
