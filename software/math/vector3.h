@@ -35,8 +35,7 @@ class Vector3 {
 		}
 
 		Vector3 cross(const Vector3 &v) {
-			Vector3 o(y*v.z-z*v.y,z*v.x-x*v.z,x*v.y-y*v.x);
-			return o;
+			return Vector3(y*v.z-z*v.y,z*v.x-x*v.z,x*v.y-y*v.x);
 		}
 
 		Vector3 normalize() {
@@ -46,8 +45,7 @@ class Vector3 {
 				return v;
 			}
 			l = 1/l;
-			Vector3 v(x*l,y*l,z*l);
-			return v;
+			return Vector3(x*l,y*l,z*l);
 		}
 
 		double mag() {
@@ -69,13 +67,11 @@ class Vector3 {
 		}
 
 		Vector3	operator+(const Vector3 &rhs) {
-			Vector3 v(x+rhs.x,y+rhs.y,z+rhs.z);
-			return v;
+			return Vector3(x+rhs.x,y+rhs.y,z+rhs.z);
 		}
 
 		Vector3	operator-(const Vector3 &rhs) {
-			Vector3 v(x-rhs.x,y-rhs.y,z-rhs.z);
-			return v;
+			return Vector3(x-rhs.x,y-rhs.y,z-rhs.z);
 		}
 
 		double& operator[](const int &ind) {
@@ -83,13 +79,11 @@ class Vector3 {
 		}
 
 		Vector3 operator*(const double &rhs) {
-			Vector3 v(x*rhs,y*rhs,z*rhs);
-			return v;
+			return Vector3(x*rhs,y*rhs,z*rhs);
 		}
 
 		Vector3 operator*(const Vector3 &rhs) {
-			Vector3 v(x*rhs.x,y*rhs.y,z*rhs.z);
-			return v;
+			return Vector3(x*rhs.x,y*rhs.y,z*rhs.z);
 		}
 
 		Vector3& operator=(const Vector3 &rhs) {
@@ -101,6 +95,14 @@ class Vector3 {
 			x = rhs; y = rhs; z = rhs;
 			return *this;
 		}
+
+		bool operator==(const Vector3 &rhs) {
+			return (x==rhs.x && y==rhs.y && z==rhs.z);
+		}
+
+		bool operator!=(const Vector3 &rhs) {
+			return !(x==rhs.x && y==rhs.y && z==rhs.z);
+		}
 };
 
 std::ostream& operator<<(std::ostream &os, const Vector3 &v) {
@@ -111,18 +113,15 @@ std::ostream& operator<<(std::ostream &os, const Vector3 &v) {
 namespace vector3 {
 
 	Vector3 i() {
-		Vector3 v(1.0,0.0,0.0);
-		return v;
+		return Vector3(1.0,0.0,0.0);
 	}
 
 	Vector3 j() {
-		Vector3 v(0.0,1.0,0.0);
-		return v;
+		return Vector3(0.0,1.0,0.0);
 	}
 
 	Vector3 k() {
-		Vector3 v(0.0,0.0,1.0);
-		return v;
+		return Vector3(0.0,0.0,1.0);
 	}
 
 }
