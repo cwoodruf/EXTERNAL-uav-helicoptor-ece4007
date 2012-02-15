@@ -196,6 +196,21 @@ class Matrix3 {
 			a33 = (-t.a21*t.a12+t.a11*t.a22)/d;	
 			return *this;
 		}
+
+		bool operator==(const Matrix3 &rhs) {
+			return (a11==rhs.a11 && a12==rhs.a12 && a13==rhs.a13 &&
+					a21==rhs.a21 && a22==rhs.a22 && a23==rhs.a23 &&
+					a31==rhs.a31 && a32==rhs.a32 && a33==rhs.a33
+			);
+		} 
+
+		bool operator!=(const Matrix3 &rhs) {
+			return !(a11==rhs.a11 && a12==rhs.a12 && a13==rhs.a13 &&
+					a21==rhs.a21 && a22==rhs.a22 && a23==rhs.a23 &&
+					a31==rhs.a31 && a32==rhs.a32 && a33==rhs.a33
+			);
+		} 
+
 };
 
 namespace matrix3 {
