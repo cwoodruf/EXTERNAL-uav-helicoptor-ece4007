@@ -34,6 +34,7 @@ class Matrix {
 		double **elements;
 
 		friend Matrix operator*(const double &lhs,const Matrix &rhs);
+		friend Matrix operator/(const double &lhs,const Matrix &rhs);
 		friend std::ostream& operator<<(std::ostream&, const Matrix&);	
 	public:
 
@@ -45,9 +46,9 @@ class Matrix {
 		unsigned int getNumRows() {return nrow;}
 		unsigned int getNumCols() {return ncol;}
 		unsigned int getSize() {return ncol*nrow;}
-		void set(const double *vals);
-		void setRow(int r, const double *vals);
-		void setCol(int c, const double *vals);
+		void set(double *vals);
+		void setRow(int r, double *vals);
+		void setCol(int c, double *vals);
 		void setElement(int r, int c, double val);
 		Matrix transpose();
 		double determinant();
@@ -648,6 +649,23 @@ namespace matrix {
 		Matrix eigens(n,1);
 	}
 
+	//Return a matrix with the product of all rows in that col
+	Matrix prod(Matrix A) {
+		int r = A.getNumRows();
+		int c = A.getNumCols();
+		Matrix B(1,c);
+
+		B.setRow(0,A[0]);
+
+		for(int j=0;j<c;++j) {
+			for(int i=1;i<r;++i) {
+				B(0,j) *= A(i,j);
+			}
+		}
+
+		return B;
+	}
+
 }
 
 //Scalar Multiplication
@@ -656,13 +674,15 @@ Matrix operator*(const double &lhs,const Matrix &rhs) {
 	return m*lhs;
 }
 
+//Scalar Division
+Matrix operator/(const double &lhs,const Matrix &rhs) {
+	Matrix m(rhs);
+	return m*(1/lhs);
+}
+
 //Default Constructor
-//Creates a 2x2 matrix
-Matrix::Matrix() : nrow(2), ncol(2) {
-	elements = new double*[nrow];
-	for(unsigned int i=0;i<nrow;++i) {
-		elements[i] = new double[ncol];
-	}
+//Creates a 0x0 matrix
+Matrix::Matrix() : nrow(0), ncol(0) {
 }
 
 //Row,Column Contructor
@@ -708,7 +728,7 @@ Matrix::Matrix(const Matrix &cpy) {
 // |3 4 5|
 // |6 7 8|
 //
-void Matrix::set(const double *vals) {	
+void Matrix::set(double *vals) {	
 	for(int i=0;i<nrow;++i) {
 		for(int j=0;j<ncol;++j) {
 			elements[i][j] = vals[i*ncol+j];
@@ -717,14 +737,14 @@ void Matrix::set(const double *vals) {
 }
 
 //Set Row Values to values from an array
-void Matrix::setRow(int r, const double *vals) {
+void Matrix::setRow(int r, double *vals) {
 	for(int i=0;i<ncol;++i) {
 		elements[r][i] = vals[i];
 	}
 }
 
 //Set Col Values to values from an array
-void Matrix::setCol(int c, const double *vals) {
+void Matrix::setCol(int c, double *vals) {
 	for(int i=0;i<nrow;++i) {
 		elements[i][c] = vals[i];
 	}
@@ -737,9 +757,9 @@ void Matrix::setElement(int r, int c, double val) {
 
 //Transpose the Matrix
 //
-//	|0 1 2|     |0 3 6|
-//	|3 4 5|  => |1 4 7|
-//  |6 7 8|     |2 5 8|
+//  |0 1 2|    |0 3 6|
+//  |3 4 5| => |1 4 7|
+//  |6 7 8|    |2 5 8|
 //
 Matrix Matrix::transpose() {
 	Matrix t(ncol,nrow);
