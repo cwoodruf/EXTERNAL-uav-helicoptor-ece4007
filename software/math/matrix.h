@@ -56,6 +56,7 @@ class Matrix {
 		Matrix inverse();
 		void swap_rows(int r1,int r2);
 
+		//Add Another Matrix
 		Matrix operator+(const Matrix &rhs) {
 			if(nrow != rhs.nrow || ncol != rhs.ncol) {
 				return *this;
@@ -71,6 +72,7 @@ class Matrix {
 			return newM;
 		}
 
+		//Inline Add Matrix
 		Matrix& operator+=(const Matrix &rhs) {
 			if(nrow != rhs.nrow || ncol != rhs.ncol) {
 				return *this;
@@ -85,6 +87,7 @@ class Matrix {
 			return *this;
 		}
 
+		//Subtract Matrix
 		Matrix operator-(const Matrix &rhs) {
 			if(nrow != rhs.nrow || ncol != rhs.ncol) {
 				return *this;
@@ -100,6 +103,7 @@ class Matrix {
 			return newM;
 		}
 
+		//Inline Subtract Matrix
 		Matrix& operator-=(const Matrix &rhs) {
 			if(nrow != rhs.nrow || ncol != rhs.ncol) {
 				return *this;
@@ -115,6 +119,7 @@ class Matrix {
 		}
 
 
+		//Scalar Multiplication
 		Matrix operator*(const double &rhs) {
 			Matrix m(*this);
 			for(int i=0;i<nrow;++i) {
@@ -125,6 +130,7 @@ class Matrix {
 			return m;
 		}	
 
+		//Inline Scalar Multiplication
 		Matrix& operator*=(const double &rhs) {
 			for(int i=0;i<nrow;++i) {
 				for(int j=0;j<ncol;++j) {
@@ -134,8 +140,8 @@ class Matrix {
 			return *this;
 		}
 
+		//Matrix Multiplication
 		Matrix operator*(const Matrix &rhs) {
-			//Should support mxn * nxp = mxp
 			if(ncol != rhs.nrow) {
 				return *this;
 			}
@@ -154,7 +160,7 @@ class Matrix {
 			return nm;
 		}
 
-
+		//Inline Matrix Multiplication
 		Matrix& operator*=(const Matrix &rhs) {
 			//Should support mxn * nxp = mxp
 			if(ncol != rhs.nrow) {
@@ -267,6 +273,7 @@ class Matrix {
 			return *this;
 		}
 
+		//Equality Test
 		bool operator==(const Matrix &rhs) {
 			if(nrow != rhs.nrow || ncol != rhs.ncol) {
 				return false;
@@ -283,6 +290,7 @@ class Matrix {
 			return true;
 		}
 
+		//Inequality Test
 		bool operator!=(const Matrix &rhs) {
 			if(nrow != rhs.nrow || ncol != rhs.ncol) {
 				return true;
@@ -299,6 +307,7 @@ class Matrix {
 			return false;
 		}
 
+		//Assignment
 		Matrix& operator=(const Matrix &rhs) {
 			for(unsigned int i=0;i<nrow;++i) {
 				delete[] elements[i];
@@ -321,32 +330,41 @@ class Matrix {
 			return *this;
 		}
 
+		//Get a Row
 		double* operator[](const int &ind) {
 			return elements[ind];
 		}
 
+		//Get Element at index
 		double& operator()(const int &ind) {
 			int r = ind/ncol;
 			int c = ind % nrow;
 			return elements[r][c];
 		}
 
+		//Get Element at row r, column c
 		double& operator()(const int &r, const int &c) {
 			return elements[r][c];
 		}
 
-		// ~ transpose
+		//Transpose Matrix
 		Matrix operator~() const {
 			Matrix o(*this);
 			return o.transpose();
 		}	
 	
-		// ! inverse
+		//Inverse Matrix
 		Matrix operator!() const {
 			Matrix o(*this);
 			return o.inverse();
 		}
 
+		//Return a matrix of booleanesque values
+		//
+		// |1 2 3|         |0 0 0|
+		// |4 0 2| > 4  =  |0 0 0|
+		// |6 1 9|         |1 0 1|
+		//
 		Matrix operator>(const double &rhs) {
 			Matrix m(nrow,ncol);
 
@@ -359,6 +377,12 @@ class Matrix {
 			return m;
 		}
 
+		//Return a matrix of booleanesque values
+		//
+		// |1 2 3|          |0 0 0|
+		// |4 0 2| >= 4  =  |1 0 0|
+		// |6 1 9|          |1 0 1|
+		//
 		Matrix operator>=(const double &rhs) {
 			Matrix m(nrow,ncol);
 
@@ -371,6 +395,12 @@ class Matrix {
 			return m;
 		}
 
+		//Return a matrix of booleanesque values
+		//
+		// |1 2 3|         |1 1 1|
+		// |4 0 2| < 4  =  |0 1 1|
+		// |6 1 9|         |0 1 0|
+		//
 		Matrix operator<(const double &rhs) {
 			Matrix m(nrow,ncol);
 
@@ -383,6 +413,12 @@ class Matrix {
 			return m;
 		}
 
+		//Return a matrix of booleanesque values
+		//
+		// |1 2 3|          |1 1 1|
+		// |4 0 2| <= 4  =  |1 1 1|
+		// |6 1 9|          |0 1 0|
+		//
 		Matrix operator<=(const double &rhs) {
 			Matrix m(nrow,ncol);
 
@@ -399,6 +435,12 @@ class Matrix {
 namespace matrix {
 	double epsilon = 1e-14;
 
+	//Return a matrix of abs values
+	//
+	// |-1 0 1|    |1 0 1|
+	// |2 -1 2| => |2 1 2|
+	// |-2 1 0|    |2 1 0|
+	//
 	Matrix abs(Matrix A) {
 		int r = A.getNumRows();
 		int c = A.getNumCols();
@@ -412,6 +454,7 @@ namespace matrix {
 		return B;
 	}
 
+	//Return true if any element of the matrix is non-zero
 	bool any(Matrix A) {
 		int r = A.getNumRows();
 		int c = A.getNumCols();
@@ -427,6 +470,7 @@ namespace matrix {
 		return false;
 	}
 
+	//Return the maximum element value
 	double max(Matrix A) {
 		int r = A.getNumRows();
 		int c = A.getNumCols();
@@ -443,6 +487,7 @@ namespace matrix {
 		return m;
 	}
 
+	//Return the minimum element value
 	double min(Matrix A) {
 		int r = A.getNumRows();
 		int c = A.getNumCols();
@@ -459,6 +504,7 @@ namespace matrix {
 		return m;
 	}
 
+	//Pivot the matrix
 	int pivot(Matrix &A, int *order, int jcol) {
 
 		int i, ipvt,n;
@@ -486,6 +532,13 @@ namespace matrix {
 		return 1;
 	}
 
+	//LU Decomposition
+	// A = LU
+	//
+	// | a11 a12 a13 |   | l11  0   0  | | u11 u12 u13 |
+	// | a21 a22 a21 | = | l21 l22  0  | |  0  u22 u23 |
+	// | a31 a32 a33 |   | l31 l32 l33 | |  0   0  u33 |
+	//
 	int lu(Matrix A,Matrix &LU) {
 		int i,j,k,n,nm1;
 		int flag = 1;
@@ -546,6 +599,11 @@ namespace matrix {
 		return flag;		
 	}
 
+	//Return the Upper Triangle Matrix
+	// | u11 u12 u13 |
+	// |  0  u22 u23 |
+	// |  0   0  u33 |
+	//
 	Matrix upper_triangle(const Matrix &A) {
 		Matrix u(A);
 
@@ -562,6 +620,11 @@ namespace matrix {
 		return u;
 	}
 
+	//Return the Lower Triangle Matrix
+	// | l11  0   0  |
+	// | l21 l22  0  |
+	// | l31 l32 l33 |
+	//
 	Matrix lower_triangle(const Matrix &A) {
 		Matrix l(A);
 
@@ -577,6 +640,7 @@ namespace matrix {
 		return l;
 	}
 
+	//Return the Eigen values
 	Matrix eig(Matrix A) {
 		int n = A.getNumRows();
 		if(n != A.getNumCols()) return A;
@@ -586,12 +650,14 @@ namespace matrix {
 
 }
 
-
+//Scalar Multiplication
 Matrix operator*(const double &lhs,const Matrix &rhs) {
 	Matrix m(rhs);
 	return m*lhs;
 }
 
+//Default Constructor
+//Creates a 2x2 matrix
 Matrix::Matrix() : nrow(2), ncol(2) {
 	elements = new double*[nrow];
 	for(unsigned int i=0;i<nrow;++i) {
@@ -599,6 +665,8 @@ Matrix::Matrix() : nrow(2), ncol(2) {
 	}
 }
 
+//Row,Column Contructor
+//Creates a rxc matrix
 Matrix::Matrix(unsigned int r, unsigned int c) : nrow(r), ncol(c) {
 	elements = new double*[nrow];
 	for(unsigned int i=0;i<nrow;++i) {
@@ -606,6 +674,7 @@ Matrix::Matrix(unsigned int r, unsigned int c) : nrow(r), ncol(c) {
 	}
 }
 
+//Destructor
 Matrix::~Matrix() {
 	for(unsigned int i=0;i<nrow;++i) {
 		delete[] elements[i];
@@ -614,6 +683,7 @@ Matrix::~Matrix() {
 	delete[] elements;
 }
 
+//Copy Constructor
 Matrix::Matrix(const Matrix &cpy) {
 	nrow = cpy.nrow;
 	ncol = cpy.ncol;
@@ -626,9 +696,18 @@ Matrix::Matrix(const Matrix &cpy) {
 			elements[i][j] = cpy.elements[i][j];
 		}
 	}
-
 }
 
+//Set the matrix elements to the elements in the array
+//
+// vals = [0 1 2 3 4 5 6 7 8]
+//
+// For a 3x3 Matrix
+//
+// |0 1 2|
+// |3 4 5|
+// |6 7 8|
+//
 void Matrix::set(const double *vals) {	
 	for(int i=0;i<nrow;++i) {
 		for(int j=0;j<ncol;++j) {
@@ -637,22 +716,31 @@ void Matrix::set(const double *vals) {
 	}
 }
 
+//Set Row Values to values from an array
 void Matrix::setRow(int r, const double *vals) {
 	for(int i=0;i<ncol;++i) {
 		elements[r][i] = vals[i];
 	}
 }
 
+//Set Col Values to values from an array
 void Matrix::setCol(int c, const double *vals) {
 	for(int i=0;i<nrow;++i) {
 		elements[i][c] = vals[i];
 	}
 }
 
+//Set a specific element's value
 void Matrix::setElement(int r, int c, double val) {
 	elements[r][c] = val;
 }
 
+//Transpose the Matrix
+//
+//	|0 1 2|     |0 3 6|
+//	|3 4 5|  => |1 4 7|
+//  |6 7 8|     |2 5 8|
+//
 Matrix Matrix::transpose() {
 	Matrix t(ncol,nrow);
 
@@ -665,6 +753,11 @@ Matrix Matrix::transpose() {
 	return t;
 }
 
+//Find the determinant
+//
+// Use LU Decomposition, and multiply return value 
+// along diagonal
+//
 double Matrix::determinant() {
 	if(nrow != ncol) return 0;
 
@@ -676,6 +769,7 @@ double Matrix::determinant() {
 	return (std::abs(det) > matrix::epsilon) ? det : 0;
 }
 
+//Find the cofactor matrix
 Matrix Matrix::cofactor() {
 	Matrix B(nrow,ncol);
 	Matrix C(nrow-1,ncol-1);
@@ -709,11 +803,16 @@ Matrix Matrix::cofactor() {
 	return B;
 }
 
+//Find the adjoint matrix
 Matrix Matrix::adjoint() {
 	Matrix B = cofactor();
 	return ~B;
 }
 
+//Find the inverse matrix
+//
+// AA^-1 = 1
+// 
 Matrix Matrix::inverse() {
 	if(nrow != ncol || nrow < 2) {
 		return *this;
@@ -748,6 +847,8 @@ Matrix Matrix::inverse() {
 	return adjoint()/d;
 }
 
+
+//Swap rows in the matrix
 void Matrix::swap_rows(int r1, int r2) {
 	double tmp;
 
@@ -758,7 +859,7 @@ void Matrix::swap_rows(int r1, int r2) {
 	}
 }
 
-		
+//Global Overload for printing the matrix
 std::ostream& operator<<(std::ostream &os, const Matrix &m) {
 	for(int i=0;i<m.nrow;++i) {
 		os << "|";
