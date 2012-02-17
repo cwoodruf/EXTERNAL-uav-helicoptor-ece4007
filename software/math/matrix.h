@@ -1,3 +1,24 @@
+/*
+* Copyright (c) 2012 Joey Yore
+*
+* Permission is hereby granted, free of charge, to any person obtaining a 
+* copy of this software and associated documentation files (the "Software"),
+* to deal in the Software without restriction, including without limitation 
+* the rights to use, copy, modify, merge, publish, distribute, sublicense, 
+* and/or sell copies of the Software, and to permit persons to whom the 
+* Software is furnished to do so, subject to the following conditions:
+*
+* The above copyright notice and this permission notice shall be included 
+* in all copies or substantial portions of the Software.
+*
+* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+* IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, 
+* FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL 
+* THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR 
+* OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, 
+* ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR 
+* OTHER DEALINGS IN THE SOFTWARE.
+*/
 #ifndef MATRIX_H
 #define MATRIX_H
 
@@ -30,6 +51,8 @@ class Matrix {
 		void setElement(int r, int c, double val);
 		Matrix transpose();
 		double determinant();
+		Matrix cofactor();
+		Matrix adjoint();
 		Matrix inverse();
 		void swap_rows(int r1,int r2);
 
@@ -554,25 +577,13 @@ namespace matrix {
 		return l;
 	}
 
-	double det(Matrix A) {
-		int n = A.getNumRows();
-		if(n != A.getNumCols()) return 0;
-
-		Matrix m;
-		double d = (double)matrix::lu(A,m);
-		for(int i=0;i<n;++i) {
-			d *= m(i,i);
-		}
-		return (std::abs(d) > epsilon) ? d : 0;
-	}
-
 	Matrix eig(Matrix A) {
 		int n = A.getNumRows();
 		if(n != A.getNumCols()) return A;
 
 		Matrix eigens(n,1);
 	}
-	
+
 }
 
 
@@ -665,13 +676,76 @@ double Matrix::determinant() {
 	return (std::abs(det) > matrix::epsilon) ? det : 0;
 }
 
+Matrix Matrix::cofactor() {
+	Matrix B(nrow,ncol);
+	Matrix C(nrow-1,ncol-1);
+
+	if(nrow == ncol) {
+		for(int j=0;j<nrow;++j) {
+			for(int i=0;i<nrow;++i) {
+				int i1 = 0;
+				for(int ii=0;ii<nrow;++ii) {
+					if(ii == i) {
+						continue;
+					}
+					int j1 = 0;
+					for(int jj=0;jj<nrow;++jj) {
+						if(jj == j) {
+							continue;
+						}
+						C(i1,j1) = elements[ii][jj];
+						++j1;
+					}
+					++i1;
+				}
+
+				double d = C.determinant();
+				double v = pow(-1.0,i+j+2.0)*d;
+				B(i,j) = (std::abs(v) > matrix::epsilon) ? v : 0;
+			}
+		}
+	}
+
+	return B;
+}
+
+Matrix Matrix::adjoint() {
+	Matrix B = cofactor();
+	return ~B;
+}
+
 Matrix Matrix::inverse() {
-	if(nrow != ncol) {
+	if(nrow != ncol || nrow < 2) {
 		return *this;
 	}
-	Matrix iA(*this);
-	
-	return iA;
+
+	if(nrow == 2) {
+		Matrix iA(*this);
+		iA(0,0) = elements[1][1];
+		iA(1,1) = elements[0][0];
+		iA(0,1) = -elements[0][1];
+		iA(1,0) = -elements[1][0];
+		double d = elements[0][0]*elements[1][1]-elements[0][1]*elements[1][0];
+
+		if(std::abs(d) < matrix::epsilon) {
+			//DNE
+			return Matrix();
+		}
+
+		for(int i=0;i<nrow;++i) {
+			for(int j=0;j<nrow;++j) {
+				iA(i,j)/=d;
+			}
+		}
+		return iA;
+	}
+
+	double d = determinant();
+
+	if(std::abs(d) < matrix::epsilon) {
+		return Matrix();
+	}
+	return adjoint()/d;
 }
 
 void Matrix::swap_rows(int r1, int r2) {
@@ -687,10 +761,11 @@ void Matrix::swap_rows(int r1, int r2) {
 		
 std::ostream& operator<<(std::ostream &os, const Matrix &m) {
 	for(int i=0;i<m.nrow;++i) {
-		for(int j=0;j<m.ncol;++j) {
-			os << m.elements[i][j] << "  ";
+		os << "|";
+		for(int j=0;j<m.ncol-1;++j) {
+			os << m.elements[i][j] << "\t";
 		}
-		os << std::endl;
+		os << m.elements[i][m.ncol-1] << "|" << std::endl;
 	}
 
 	return os;
