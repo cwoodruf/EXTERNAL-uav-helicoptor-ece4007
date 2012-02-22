@@ -25,6 +25,7 @@
 #include <iostream>
 #include <cmath>
 #include <string.h>
+#include "vector.h"
 
 class Matrix {
 
@@ -40,6 +41,7 @@ class Matrix {
 
 		Matrix();
 		Matrix(unsigned int r, unsigned int c);
+		template <typename T> Matrix(const Vector<Vector<T> > &v);
 		~Matrix();
 		Matrix(const Matrix &cpy);
 
@@ -693,6 +695,21 @@ Matrix::Matrix(unsigned int r, unsigned int c) : nrow(r), ncol(c) {
 		elements[i] = new double[ncol];
 	}
 }
+
+template <typename T> 
+Matrix::Matrix(const Vector<Vector<T> > &v) {
+	nrow = v.Size();
+	ncol = v[0].Size();
+	elements = new double*[nrow];
+	for(int i=0;i<nrow;++i) {
+		elements[i] = new double[ncol];
+		for(int j=0;j<ncol;++j) {
+			elements[i][j] = static_cast<double>(v[i][j]);
+		}
+	}
+
+}
+
 
 //Destructor
 Matrix::~Matrix() {
