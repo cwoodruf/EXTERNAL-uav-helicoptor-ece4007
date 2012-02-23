@@ -312,11 +312,16 @@ class Matrix {
 
 		//Assignment
 		Matrix& operator=(const Matrix &rhs) {
-			for(unsigned int i=0;i<nrow;++i) {
-				delete[] elements[i];
+
+			if(ncol) {
+				for(unsigned int i=0;i<nrow;++i) {
+					delete[] elements[i];
+				}
 			}
 
-			delete[] elements;
+			if(nrow) {
+				delete[] elements;
+			}
 
 			nrow = rhs.nrow;
 			ncol = rhs.ncol;
@@ -668,6 +673,26 @@ namespace matrix {
 		return B;
 	}
 
+	Matrix eye(int n) {
+		Matrix o(n,n);
+		for(int i=0;i<n;++i) {
+			o(i,i) = 1.0;
+		}
+		return o;
+	}
+
+	template <typename T>
+	Vector<Vector<T> > vectorize(Matrix m) {
+		Vector<Vector<T> > o;
+		for(int ii=0;ii<m.getNumRows();++ii) {
+				Vector<T> v;
+			for(int jj=0;jj<m.getNumCols();++jj) {
+				v.Push_Back(T(m(ii,jj)));
+			}
+			o.Push_Back(v);
+		}
+		return o;
+	}
 }
 
 //Scalar Multiplication
@@ -693,6 +718,9 @@ Matrix::Matrix(unsigned int r, unsigned int c) : nrow(r), ncol(c) {
 	elements = new double*[nrow];
 	for(unsigned int i=0;i<nrow;++i) {
 		elements[i] = new double[ncol];
+		for(unsigned int j=0;j<ncol;++j) {
+			elements[i][j] = 0.0;
+		}
 	}
 }
 

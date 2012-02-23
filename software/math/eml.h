@@ -7,6 +7,7 @@
 #include "vector.h"
 #include <iostream>
 
+using namespace std;
 
 namespace eml {
 
@@ -34,19 +35,105 @@ namespace eml {
 		std::cout << "WARNING: zlascl not implemented" << std::endl;
 		return A;
 	}
-/*
-	void zggbal_eigsearch_rows(Vector<Vector<Complex> > A, Vector<Vector<Complex> > B,int ihi, int &i, int &j, bool &found) {
+
+	
+	void zggbal_eigsearch_rows(const Vector<Vector<Complex> > &A, const Vector<Vector<Complex> > &B,int ihi, int &i, int &j, bool &found) {
+
 		i = 0;
 		j = 0;
 		found = false;
-		isgen = !((bool)B.Size());
-		for(int ii=ihi;ii>=0;++ii) {
-			for(int jj=0;jj<ihi;++jj) {
-				if(A[ii][jj] != 0 || (isgen && (B[])))
+		bool isgen = !((bool)B.Size());
+
+		int ii = ihi-1;
+		while(ii >= 0) {
+			int nzcount = 0;
+			i = ii;
+			j = ihi-1;
+			for(int jj=0;jj<ihi;++j) {
+				if((A[ii][jj] != 0.0) || (isgen && (B[ii][jj] != 0.0)) || (!isgen && (ii == jj))) {
+					if(nzcount == 0) {
+						j = jj;
+						nzcount = 1;
+					} else {
+						nzcount = 2;
+						break;
+					}
+				}
+			}
+			if(nzcount < 2) {
+				found = true;
+				break;
+			}
+			--ii;
+		}
+	}
+
+
+	void zggbal_eigsearch_cols(Vector<Vector<Complex> > A, Vector<Vector<Complex> > B,int ilo, int ihi, int &i, int &j, bool &found) {
+		i = 0;
+		j = 0;
+		found = false;
+		bool isgen = !((bool)B.Size());
+
+		for(int jj=ilo;jj<ihi;++jj) {
+			int nzcount = 0;
+			i = ihi-1;
+			j = jj;
+			for(int ii=ilo;ii<ihi;++ii) {
+				if((A[ii][jj] != 0.0) || (isgen && (B[ii][jj] != 0.0)) || (!isgen && (ii == jj))) {
+					if(nzcount == 0) {
+						i = ii;
+						nzcount = 1;
+					} else {
+						nzcount = 2;
+						break;
+					}
+				}
+			}
+			if(nzcount < 2) {
+				found = true;
+				break;
 			}
 		}
 	}
-*/
+
+
+	void zggbal_simtran(Vector<Vector<Complex> > &A,Vector<Vector<Complex> > &B,int m,int i,int j,int ilo, int ihi) {
+
+		int n = A.Size();
+		bool isgen = !((bool)B.Size());
+
+		if(i != m) {
+			for(int k=ilo;k<n;++k) {
+				Complex atmp = A[i][k];
+				A[i][k] = A[m][k];
+				A[m][k] = atmp;
+			}
+			if(isgen) {
+				for(int k=ilo;k<n;++k) {
+					Complex btmp = B[i][k];
+					B[i][k] = B[m][k];
+					B[m][k] = btmp;
+				}
+			}
+		}
+		if(j != m) {
+			for(int k=0;k<ihi;++k) {
+				Complex atmp = A[k][j];
+				A[k][j] = A[k][m];
+				A[k][m] = atmp;
+			}
+			if(isgen) {
+				for(int k=0;k<ihi;++k) {
+					Complex btmp = B[k][j];
+					B[k][j] = B[k][m];
+					B[k][m] = btmp;
+				}
+			}
+		}
+
+	}
+
 	void zggbal(Vector<Vector<Complex> > &A,Vector<Vector<Complex> > &B,int &ilo,int &ihi,Vector<Complex> &rscale) {
 		int n = A.Size();
 		rscale = Vector<Complex>(n);
@@ -56,10 +143,10 @@ namespace eml {
 		if(n <= 1) {
 			ilo = 0;
 			ihi = 0;
-			rscale[0] = 1;
+			rscale[0] = 0;
 			return;
 		}
-/*
+
 		while(1) {
 			int i,j;
 			bool found;
@@ -69,13 +156,35 @@ namespace eml {
 			}
 			zggbal_simtran(A,B,ihi,i,j,ilo,ihi);
 			rscale[ihi] = j;
-			ihi = index_minus(ihi,0);
 			if(ihi == 1) {
 				rscale[ihi] = ihi;
 				return;
 			}
 		}
-*/
+		while(1) {
+			int i,j;
+			bool found;
+			zggbal_eigsearch_cols(A,B,ilo,ihi,i,j,found);
+			if(!found) {
+				break;
+			}
+			zggbal_simtran(A,B,ihi,i,j,ilo,ihi);
+			rscale[ilo] = j;
+			ilo = ++ilo;
+			if(ilo == ihi) {
+				rscale[ilo] = ilo;
+				return;
+			}
+		}
+	}
+
+	
+	Vector<Vector<Complex> > zgeqr2(Vector<Vector<Complex> > Bc, int ijmin, int imax, int jmax,Vector<Vector<Complex> > &tau) {
+
+		Vector<Vector<Complex> > out(Bc);
+
+		
+			
 	}
 
 	void zggev(Vector<Vector<Complex> > Ac, Vector<Vector<Complex> > Bc, Vector<Complex> &a1, Vector<Complex> &b1) {
@@ -89,7 +198,7 @@ namespace eml {
 		bool compv = false;
 		bool isgen = !((bool)Bc.Size());
 
-		int n = Ac[0].Size();
+		int n = Ac.Size();
 		Complex anrm = zlangeM(Ac);
 		bool ilascl = false;
 		Complex anrmto = anrm;
@@ -111,7 +220,7 @@ namespace eml {
 			bool ilbscl = false;
 			Complex bnrmto = bnrm;
 
-			if(bnrm > 0 && bnrm < SMLNUM) {
+			if(bnrm > 0.0 && bnrm < SMLNUM) {
 				bnrmto = SMLNUM;
 				ilbscl = true;
 			} else if(bnrm > BIGNUM) {
@@ -127,6 +236,15 @@ namespace eml {
 		int ilo,ihi;
 		Vector<Complex> rscale;
 		zggbal(Ac,Bc,ilo,ihi,rscale);
+
+		int lastcol = ihi;
+		if(isgen) {
+			Vector<Vector<Complex> > tau;
+			//Bc = zgeqr2(Bc,ilo,ihi,lascol,tau)
+			//Ac = zunmqr(Bc,tau,Ac,ilo,ihi,lastcol)
+		}
+		//zgghrd("N","N",ilo,ihi,Ac,Bc);
+		//zhgeqz(Ac,Bc,ilo,ihi,a1,b1);
 	}
 }
 
