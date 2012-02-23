@@ -305,9 +305,11 @@ namespace signalproc {
 		cout << endl << "d = " << endl;
 		cout << Matrix(d) << endl;
 
-
-		den = poly(a);
-		//num = poly(a-b*c)+(d-1)*den;
+		//TODO: Implement poly for matrix and buttnum
+		//den = poly(a);
+		//num = buttnum(btype,n,Wn,Bw,analog,den);
+		// -or-
+		// num = poly(a-b*c)+(d-1)*den;
 
 	}
 

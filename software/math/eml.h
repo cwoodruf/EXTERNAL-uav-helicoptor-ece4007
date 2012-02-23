@@ -3,6 +3,7 @@
 
 #include <math.h>
 #include <cmath>
+#include <string.h>
 #include "complex.h"
 #include "vector.h"
 #include <iostream>
@@ -178,13 +179,145 @@ namespace eml {
 		}
 	}
 
-	
-	Vector<Vector<Complex> > zgeqr2(Vector<Vector<Complex> > Bc, int ijmin, int imax, int jmax,Vector<Vector<Complex> > &tau) {
+	double sub2norm(Matrix x, int start, int end) {
 
-		Vector<Vector<Complex> > out(Bc);
+		double y = 0.0, scale = 0.0;
 
-		
-			
+		for(int k=start;k<end;++k) {
+			double absx = abs(x(k));
+			if(absx > 0) {
+				if(scale < absx) {
+					double tmp = scale/absx;
+					y = 1 + y*tmp*tmp;
+					scale = absx;
+				} else {
+					double tmp = absx / scale;
+					y = y + tmp*tmp;
+				}
+			}	
+		}
+		return (scale * sqrt(y));
+	}	
+
+	bool isreal(const Vector<Vector<Complex> > &v) {
+		for(int i=0,il=v.Size();i<il;++i) {
+			for(int j=0,jl=v[i].Size();j<jl;++j) {
+				if(!v[i][j].isReal()) {
+					return false;
+				}
+			}
+		}
+		return true;
+	}
+
+	void zgeqr2(Vector<Vector<Complex> > &A, int ijmin, int imax, int jmax,Vector<Complex> &tau) {
+
+		double SAFMIN = 2 * SMLNUM;
+		double RSAFMN = 1/SAFMIN;
+		int m = A.Size();
+		int n = A[0].Size();
+		int mmn = m < n ? m : n;
+		int ijm = imax < jmax ? imax : jmax;
+		int mn = mmn < ijm ? mmn : ijm;
+cout << m << endl;
+cout << n << endl;
+		for(int i=ijmin;i<mn;++i) {
+			int itau = i - ijmin + 1;
+			int i2 = i*m;
+			int i1 = i2 + 1 - (imax - i);
+			double xnrm = sub2norm(Matrix(A),i1,i2);
+			double alphar = A[i][i].getReal();
+			double alphai = A[i][i].getImag();
+
+			if(xnrm == 0 && alphai == 0) {
+				tau[itau] = 0.0;
+			} else {
+				double beta1;
+				if(isreal(A)) {
+					beta1 = sqrt(pow(abs(alphar),2) + pow(abs(xnrm),2));
+				} else {
+					beta1 = sqrt(pow(abs(alphar),2) + pow(abs(alphai),2) + pow(abs(xnrm),2));
+				} 
+				if(alphar >= 0) {
+					beta1 = -beta1;
+				}
+				int knt = 0;
+				while(abs(beta1) < SAFMIN) {
+					++knt;
+					for(int k=i1;k<i2;++k) {
+						A[k] = A[k] * RSAFMN;
+					}
+					beta1 *= RSAFMN;
+					alphai *= RSAFMN;
+					alphar *= RSAFMN;
+				}
+				if(knt > 0) {
+					xnrm = sub2norm(Matrix(A),i1,i2);
+					if(isreal(A)) {
+						beta1 = sqrt(pow(abs(alphar),2) + pow(abs(xnrm),2));
+					} else {
+						beta1 = sqrt(pow(abs(alphar),2) + pow(abs(alphai),2) + pow(abs(xnrm),2));
+					}
+					if(alphar >= 0) {
+						beta1 = -beta1;
+					}
+				}
+
+				double alpha1;
+				if(isreal(A)) {
+					tau[itau] = (beta1 - alphar)/beta1;
+					alpha1 = 1/(alphar - beta1);
+				} else {
+					tau[itau] = Complex((beta1-alphar)/beta1,-alphai/beta1);
+					alpha1 = 1/static_cast<double>(Complex(alphar-beta1,alphai));
+				}
+				for(int k=i1;k<i2;++k) {
+					A[k] = A[k] * alpha1;
+				}
+				for(int k=i1;k<i2;++k) {
+					beta1 *= SAFMIN;
+				}
+				A[i][i] = beta1;
+			}
+			if(i < jmax) {
+				Complex conjtaui = complex_number::conj(tau[itau]);
+				if(conjtaui != 0.0) {
+					int ip1 = i+1;
+					for(int j=ip1;j<jmax;++j) {
+						Complex wj = complex_number::conj(A[i][j]);
+						for(int k=ip1;k<imax;++k) {
+							wj += A[k][j] * complex_number::conj(A[k][j]);
+						}
+						wj = conjtaui * complex_number::conj(wj);
+						if(wj != 0.0) {
+							A[i][j] -= wj;
+							for(int k=ip1;k<imax;++k) {
+								A[k][j] -= A[k][i]*wj;
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
+	void zgghrd(const char *compq, const char *compz, int ilo, int ihi, const Vector<Vector<Complex> > &A, const Vector<Vector<Complex> > &B) {
+
+		int n = A.Size();
+
+		if(strcmp(compq,"N")) {
+			throw "zgghrd: Not Implemnted";
+		}
+		if(strcmp(compz,"N")) {
+			throw "zgghrd: Not Implemnted";
+		}
+
+		double ilq = false;
+		double ilz = false;
+
+		int ihim1 = ihi - 1;
+		int jcol = ilo;
+		//TODO: Finish
 	}
 
 	void zggev(Vector<Vector<Complex> > Ac, Vector<Vector<Complex> > Bc, Vector<Complex> &a1, Vector<Complex> &b1) {
@@ -239,10 +372,12 @@ namespace eml {
 
 		int lastcol = ihi;
 		if(isgen) {
-			Vector<Vector<Complex> > tau;
-			//Bc = zgeqr2(Bc,ilo,ihi,lascol,tau)
+			Vector<Complex> tau;
+			//TODO: Implement those 2
+			//zgeqr2(Bc,ilo,ihi,lastcol,tau);
 			//Ac = zunmqr(Bc,tau,Ac,ilo,ihi,lastcol)
 		}
+		//TODO: Implement
 		//zgghrd("N","N",ilo,ihi,Ac,Bc);
 		//zhgeqz(Ac,Bc,ilo,ihi,a1,b1);
 	}
