@@ -6,7 +6,7 @@
 #include "complex.h"
 #include "vector.h"
 #include "matrix.h"
-//#include "eml.h"
+#include "eml.h"
 #include <iostream>
 
 using namespace std;
@@ -60,12 +60,11 @@ namespace signalproc {
 		Vector<Vector<Complex> > Ac(x);
 		Vector<Vector<Complex> > Bc;
 		Vector<Complex> a1,b1;
-		//eml::zggev(Ac,Bc,a1,b1);
+		eml::zggev(Ac,Bc,a1,b1);
 		return a1/b1;
 	}
 
 	Vector<Complex> poly(Vector<Vector<Complex> > x) {
-
 		Vector<Complex> e = eig(x);
 		return poly(e);
 	}
@@ -147,16 +146,7 @@ namespace signalproc {
 			s(1,0) = 1.0; 
 			s(1,1) = 0,0;
 			
-			Matrix res = !t*s*t;
-
-			Vector<Vector<Complex> > a1;
-			for(int ii=0;ii<2;++ii) {
-					Vector<Complex> v;
-				for(int jj=0;jj<2;++jj) {
-					v.Push_Back(Complex(res(ii,jj)));
-				}
-				a1.Push_Back(v);
-			}
+			Vector<Vector<Complex> > a1 = matrix::vectorize<Complex>(!t*s*t);
 			
 			//b1  = inv(t) matrix mult [1;0]
 			Vector<Vector<Complex> > b1(2); 
@@ -177,8 +167,6 @@ namespace signalproc {
 
 			
 			//a = [a zeros(ma1,na2);b1*c a1]
-			//n = a.Size()			
-
 			//Find b1*c
 			Matrix mb1(b1);
 			Matrix mc(c);
@@ -234,15 +222,23 @@ namespace signalproc {
 
 	}
 
-	void lp2lp(Vector<Vector<Complex> > &a, Vector<Vector<Complex> > &b, Vector<Vector<Complex> > &c, Vector<Vector<Complex> > &d, double wo) {
+	void lp2lp(Vector<Vector<Complex> > &a, Vector<Vector<Complex> > &b, double wo) {
 		a = wo*a;
 		b = wo*b;
-		c = c;
-		d = d;
 	}
 
 	void bilinear(Vector<Vector<Complex> > &a, Vector<Vector<Complex> > &b, Vector<Vector<Complex> > &c, Vector<Vector<Complex> > &d, double fs) {
 
+		double t = 1/fs;
+		double r = sqrt(t);
+		Matrix ma(a); Matrix mb(b); Matrix mc(c); Matrix md(d);
+		Matrix t1 = matrix::eye(a.Size()) + ma*t/2;
+		Matrix t2 = matrix::eye(a.Size()) - ma*t/2;
+
+		a = matrix::vectorize<Complex>(!t2*t1);
+		b = matrix::vectorize<Complex>(t/r*(!t2*mb));
+		c = matrix::vectorize<Complex>(r*mc*!t2);
+		d = matrix::vectorize<Complex>(mc*!t2*mb*t/2 + md);
 	}
 
 	void butter(int n, double Wn, Vector<Complex> &num, Vector<Complex> &den, const char *type="lp") {
@@ -285,14 +281,34 @@ namespace signalproc {
 
 		//Step 3: Transform to filter type
 		if(!strcmp(type,"lp")) {
-			lp2lp(a,b,c,d,Wn);
+			lp2lp(a,b,Wn);
 		}
 
-/*
+		cout << "a = " << endl;
+		cout << Matrix(a) << endl;
+		cout << endl << "b = " << endl;
+		cout << Matrix(b) << endl;
+		cout << endl << "c = " << endl;
+		cout << Matrix(c) << endl;
+		cout << endl << "d = " << endl;
+		cout << Matrix(d) << endl;
+
+
 		bilinear(a,b,c,d,fs);
+
+		cout << "a = " << endl;
+		cout << Matrix(a) << endl;
+		cout << endl << "b = " << endl;
+		cout << Matrix(b) << endl;
+		cout << endl << "c = " << endl;
+		cout << Matrix(c) << endl;
+		cout << endl << "d = " << endl;
+		cout << Matrix(d) << endl;
+
+
 		den = poly(a);
-//		num = poly(a-b*c)+(d-1)*den;
-*/
+		//num = poly(a-b*c)+(d-1)*den;
+
 	}
 
 }

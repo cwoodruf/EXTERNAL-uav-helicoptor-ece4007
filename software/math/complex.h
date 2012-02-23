@@ -103,9 +103,9 @@ class Complex {
 		bool operator==(const Complex &rhs) {
 			return ((real==rhs.real) && (imag==rhs.real));
 		}
-
+	
 		bool operator!=(const Complex &rhs) {
-			return ((real!=rhs.real) || (imag!=rhs.imag));
+			return !(*this != rhs); 
 		}
 
 		Complex& operator=(const Complex &rhs) {
@@ -134,6 +134,8 @@ class Complex {
 		bool operator<=(const double &rhs);
 		bool operator>(const double &rhs);
 		bool operator>=(const double &rhs);
+		bool operator==(const double &rhs);
+		bool operator!=(const double &rhs);
 
 		operator double();	
 };
@@ -253,6 +255,14 @@ bool Complex::operator>(const double &rhs) {
 
 bool Complex::operator>=(const double &rhs) {
 	return (complex_number::abs(*this) >= rhs);
+}
+
+bool Complex::operator==(const double &rhs) {
+	return (static_cast<double>(*this) == rhs);
+}
+
+bool Complex::operator!=(const double &rhs) {
+	return (static_cast<double>(*this) != rhs);
 }
 
 Complex::operator double() { 
