@@ -154,7 +154,7 @@ class Vector {
 		}
 
 		//Scalar Multiplication
-		Vector<T> operator*(const T &rhs) {
+/*		Vector<T> operator*(const T &rhs) {
 			Vector<T> out;
 			for(int i=0;i<count;++i) {
 				out.Push_Back(elements[i] * rhs);
@@ -171,7 +171,7 @@ class Vector {
 
 			return &this;
 		}
-
+*/
 		//Component by Component Multiplication
 		Vector<T> operator*(const Vector &rhs) {
 			Vector<T> out;
@@ -216,7 +216,7 @@ class Vector {
 			return &this;
 		}
 
-
+/*
 		//Scalar Division
 		Vector<T> operator/(const T &rhs) {
 			Vector<T> out;
@@ -235,7 +235,7 @@ class Vector {
 
 			return &this;
 		}
-
+*/
 		//Component by Component Division
 		Vector<T> operator/(const Vector &rhs) {
 			Vector<T> out;
