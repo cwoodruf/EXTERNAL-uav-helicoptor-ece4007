@@ -313,6 +313,38 @@ namespace signalproc {
 
 	}
 
+	Vector<double> filter(const Vector<double> &b, const Vector<double> &a, const Vector<double> &x) {
+
+		Vector<double> y;
+		int nb = b.Size();
+		int na = a.Size();
+		int ndbuffer = nb > na ? nb : na;
+		int ndbufferm1 = ndbuffer-1;
+		int nx = x.Size();
+		int nc = 1;
+		int offset = 0;
+
+		for(int i=0;i<nc;++i) {
+			Vector<double> dbuffer(ndbuffer);
+			for(int j=0;j<nx;+j) {
+				int jp = j + offset;
+				for(int k=0;k<ndbufferm1;++k) {
+					dbuffer[k] = dbuffer[k+1];
+				}
+				dbuffer[ndbuffer] = 0.0;
+				for(int k=0;k<nb;++k) {
+					dbuffer[k] = dbuffer[k] + x[jp]*b[k];
+				}
+				for(int k=1;k<na;++k) {
+					dbuffer[k] = dbuffer[k] - dbuffer[0]*a[k];
+				}
+				y[jp] = dbuffer[0];
+			}
+			offset = offset+nx;
+		}
+
+		return y;
+	}
 }
 
 #endif
