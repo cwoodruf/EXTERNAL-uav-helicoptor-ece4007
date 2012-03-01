@@ -24,6 +24,7 @@
 
 #include <unistd.h>
 #include <stdlib.h>
+#include <iostream>
 
 template <typename T> class VectorIterator;
 template <typename T>
@@ -34,10 +35,10 @@ class Vector {
 		size_t count;
 		size_t reserved;
 
-
 	public:
 		Vector();
 		Vector(const Vector&);
+		Vector(int num);
 		~Vector();
 
 		void Push_Back(const T&);
@@ -49,22 +50,246 @@ class Vector {
 		T& operator[](size_t) const;
 		size_t Size() const;
 		bool Empty() const;
-
-		void Clear();	
+		void Clear();
+		
 
 		VectorIterator<T> Begin() const;
 		VectorIterator<T> End() const;
 
 		Vector &operator=(const Vector &cpy) {
+
+			//Delete Memory
+			if(elements) {
+				for(int i=0;i<reserved;++i) {
+					if(i < count) {
+						elements[i].~T();
+					}
+				}
+				free(elements);
+			}
+
+			//Allocate New Memory
 			count = cpy.count;
 			reserved = cpy.reserved;
 			elements = (T*)malloc((reserved) * sizeof(T));
-
-			for(int i=0;i<count;++i) {
-				new (&elements[i]) T(cpy.elements[i]);
+			if(elements) {
+				//Copy Data
+				for(int i=0;i<count;++i) {
+					new (&elements[i]) T(cpy.elements[i]);
+				}
 			}
 
 			return *this;
+		}
+
+		//Component by Component Addition
+		Vector<T> operator+(const Vector &rhs) {
+			Vector<T> out;
+			if(count != rhs.count) {
+				throw "Vector: Dimensions do not agree";
+			}
+			for(int i=0;i<count;++i) {
+				out.Push_Back(elements[i] + rhs.elements[i]);
+			}
+
+			return out;
+		}
+
+		//Component by Component Addition Assign
+		Vector<T>& operator+=(const Vector &rhs) {
+			if(count != rhs.count) {
+				throw "Vector: Dimensions do not agree";
+			}
+			for(int i=0;i<count;++i) {
+				elements[i] += rhs.elements[i];
+			}
+
+			return &this;
+		}
+
+		//Component by Component Subtraction
+		Vector<T> operator-(const Vector &rhs) {
+			Vector<T> out;
+			if(count != rhs.count) {
+				throw "Vector: Dimensions do not agree";
+			}
+			for(int i=0;i<count;++i) {
+				out.Push_Back(elements[i] - rhs.elements[i]);
+			}
+
+			return out;
+		}
+
+
+		//Component by Component Subtraction Assign
+		Vector<T>& operator-=(const Vector &rhs) {
+			if(count != rhs.count) {
+				throw "Vector: Dimensions do not agree";
+			}
+			for(int i=0;i<count;++i) {
+				elements[i] -= rhs.elements[i];
+			}
+
+			return &this;
+		}
+
+		//Scalar Multiplication
+		Vector<T> operator*(const double &rhs) {
+			Vector<T> out;
+			for(int i=0;i<count;++i) {
+				out.Push_Back(elements[i] * rhs);
+			}
+
+			return out;
+		}
+
+	
+		//Scalar Mulitplication Assign
+		Vector<T>& operator*=(const double &rhs) {
+			for(int i=0;i<count;++i) {
+				elements[i] *= rhs;
+			}
+
+			return &this;
+		}
+
+		//Scalar Multiplication
+/*		Vector<T> operator*(const T &rhs) {
+			Vector<T> out;
+			for(int i=0;i<count;++i) {
+				out.Push_Back(elements[i] * rhs);
+			}
+
+			return out;
+		}
+
+		//Scalar Mulitplication Assign
+		Vector<T>& operator*=(const T &rhs) {
+			for(int i=0;i<count;++i) {
+				elements[i] *= rhs;
+			}
+
+			return &this;
+		}
+*/
+		//Component by Component Multiplication
+		Vector<T> operator*(const Vector &rhs) {
+			Vector<T> out;
+			if(count != rhs.count) {
+				throw "Vector: Dimensions do not agree";
+			}
+			for(int i=0;i<count;++i) {
+				out.Push_Back(elements[i] * rhs.elements[i]);
+			}
+
+			return out;
+		}
+
+		//Component by Component Mulitplication Assign
+		Vector<T>& operator*=(const Vector &rhs) {
+			if(count != rhs.count) {
+				throw "Vector: Dimensions do not agree";
+			}
+			for(int i=0;i<count;++i) {
+				elements[i] *= rhs.elements[i];
+			}
+
+			return *this;
+		}
+
+		//Scalar Division
+		Vector<T> operator/(const double &rhs) {
+			Vector<T> out;
+			for(int i=0;i<count;++i) {
+				out.Push_Back(elements[i] / rhs);
+			}
+
+			return out;
+		}
+
+		//Scalar Division Assign
+		Vector<T>& operator/=(const double &rhs) {
+			for(int i=0;i<count;++i) {
+				elements[i] /= rhs;
+			}
+
+			return &this;
+		}
+
+/*
+		//Scalar Division
+		Vector<T> operator/(const T &rhs) {
+			Vector<T> out;
+			for(int i=0;i<count;++i) {
+				out.Push_Back(elements[i] / rhs);
+			}
+
+			return out;
+		}
+
+		//Scalar Division Assign
+		Vector<T>& operator/=(const T &rhs) {
+			for(int i=0;i<count;++i) {
+				elements[i] /= rhs;
+			}
+
+			return &this;
+		}
+*/
+		//Component by Component Division
+		Vector<T> operator/(const Vector &rhs) {
+			Vector<T> out;
+			if(count != rhs.count) {
+				throw "Vector: Dimensions do not agree";
+			}
+			for(int i=0;i<count;++i) {
+				out.Push_Back(elements[i] / rhs.elements[i]);
+			}
+
+			return out;
+		}
+
+		//Component by Component Addition Assign
+		Vector<T>& operator/=(const Vector &rhs) {
+			if(count != rhs.count) {
+				throw "Vector: Dimensions do not agree";
+			}
+			for(int i=0;i<count;++i) {
+				elements[i] /= rhs.elements[i];
+			}
+
+			return &this;
+		}
+
+		//Index Operator
+		T& operator[](const int &index) {
+			int i;
+			if(index < 0) {
+				i = count + index;
+			} else {
+				if(index > count) {
+					i = count;
+				} else {
+					i = index;
+				}
+			}
+
+			return elements[i];
+		}
+
+		//slice
+		Vector<T> operator()(const int &start, const int &end) {
+
+			int st = (start < 0) ? 0 : start;
+			int en = (end < 0) ? count+end : ((end > count) ? count : end);
+			int n = en-start+1;
+
+			Vector<T> out;
+			for(int i=start;i<n+start;++i) {
+				out.Push_Back(elements[i]);
+			}
+
+			return out;
 		}
 };
 
@@ -90,14 +315,25 @@ Vector<T>::Vector() : elements(NULL), count(0), reserved(0) {
 }
 
 template <typename T>
-Vector<T>::Vector(const Vector& rhs) {
-
-	count = rhs.count;
-	reserved = rhs.reserved;
+Vector<T>::Vector(int num) {
+	count = num;
+	reserved = num;
 	elements = (T*)malloc((reserved) * sizeof(T));
 
 	for(int i=0;i<count;++i) {
-		new (&elements[i]) T(rhs.elements[i]);
+		new (&elements[i]) T();
+	}
+}
+
+template <typename T>
+Vector<T>::Vector(const Vector& cpy) {
+
+	count = cpy.count;
+	reserved = cpy.reserved;
+	elements = (T*)malloc((reserved) * sizeof(T));
+
+	for(int i=0;i<count;++i) {
+		new (&elements[i]) T(cpy.elements[i]);
 	}
 }
 
@@ -288,6 +524,62 @@ bool VectorIterator<T>::operator !=(const VectorIterator<T>& rhs) const {
 template <typename T>
 bool VectorIterator<T>::operator ==(const VectorIterator<T>& rhs) const {
 	return (current == rhs.current);
+}
+
+template <typename T>
+Vector<T> operator*(const double &lhs,const Vector<T> &rhs) {
+	Vector<T> out;
+	for(int i=0,l=rhs.Size();i<l;++i) {
+		out.Push_Back(rhs[i] * lhs);
+	}
+
+	return out;
+}
+
+template <typename T>
+Vector<T> operator*(const T &lhs,const Vector<T> &rhs) {
+	Vector<T> out;
+	for(int i=0,l=rhs.Size();i<l;++i) {
+		out.Push_Back(rhs[i] * lhs);
+	}
+
+	return out;
+}
+
+/*
+template <typename T>
+Vector<T> operator/(const double &lhs,const Vector<T> &rhs) {
+	Vector<T> out;
+	for(int i=0,l=rhs.Size();i<l;++i) {
+		out.Push_Back(lhs/rhs[i]);
+	}
+
+	return out;
+}
+
+template <typename T>
+Vector<T> operator/(const T &lhs,const Vector<T> &rhs) {
+	Vector<T> out;
+	for(int i=0,l=rhs.Size();i<l;++i) {
+		out.Push_Back(lhs/rhs[i]);
+	}
+
+	return out;
+}
+*/
+
+template <typename T>
+std::ostream& operator<<(std::ostream &os, const Vector<T> &v) {
+	os << "<";
+	for(int i=0,l=v.Size();i<l;++i) {
+		os << v[i]; 
+		if(i != l-1) {
+			os << ",";
+		}
+	}
+	os << ">";
+
+	return os;
 }
 
 #endif

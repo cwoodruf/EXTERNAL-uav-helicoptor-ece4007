@@ -1,3 +1,25 @@
+/*
+* Copyright (c) 2012 Joey Yore
+*
+* Permission is hereby granted, free of charge, to any person obtaining a 
+* copy of this software and associated documentation files (the "Software"),
+* to deal in the Software without restriction, including without limitation 
+* the rights to use, copy, modify, merge, publish, distribute, sublicense, 
+* and/or sell copies of the Software, and to permit persons to whom the 
+* Software is furnished to do so, subject to the following conditions:
+*
+* The above copyright notice and this permission notice shall be included 
+* in all copies or substantial portions of the Software.
+*
+* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+* IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, 
+* FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL 
+* THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR 
+* OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, 
+* ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR 
+* OTHER DEALINGS IN THE SOFTWARE.
+*/
+
 #ifndef SIGNALPROC_H
 #define SIGNALPROC_H
 
@@ -57,6 +79,9 @@ namespace signalproc {
 	}	
 
 	Vector<Complex> eig(Vector<Vector<Complex> > x) {
+		
+		throw "NOT IMPLMENTED: DO NOT USE POLY";
+
 		Vector<Vector<Complex> > Ac(x);
 		Vector<Vector<Complex> > Bc;
 		Vector<Complex> a1,b1;
@@ -96,7 +121,7 @@ namespace signalproc {
 		int nz = z.Size();
 		int remp = np % 2;
 		int remz = nz % 2;
-		cout << np << '\t' << nz << '\t' << remp << '\t' << remz << endl;
+
 		if(remp) {
 			a = Vector<Vector<Complex> >(1); a[0] = Vector<Complex>(1);
 			b = Vector<Vector<Complex> >(1); b[0] = Vector<Complex>(1);
@@ -229,6 +254,8 @@ namespace signalproc {
 
 	void bilinear(Vector<Vector<Complex> > &a, Vector<Vector<Complex> > &b, Vector<Vector<Complex> > &c, Vector<Vector<Complex> > &d, double fs) {
 
+		throw "NOT IMPLMENTED: DO NOT USE BILINEAR";
+
 		double t = 1/fs;
 		double r = sqrt(t);
 		Matrix ma(a); Matrix mb(b); Matrix mc(c); Matrix md(d);
@@ -242,6 +269,8 @@ namespace signalproc {
 	}
 
 	void butter(int n, double Wn, Vector<Complex> &num, Vector<Complex> &den, const char *type="lp") {
+
+		throw "NOT IMPLMENTED: DO NOT USE BUTTER";
 
 		if(n>500) {
 			throw "Butter: Filter Order Too Large";
@@ -315,32 +344,19 @@ namespace signalproc {
 
 	Vector<double> filter(const Vector<double> &b, const Vector<double> &a, const Vector<double> &x) {
 
-		Vector<double> y;
-		int nb = b.Size();
-		int na = a.Size();
-		int ndbuffer = nb > na ? nb : na;
-		int ndbufferm1 = ndbuffer-1;
 		int nx = x.Size();
-		int nc = 1;
-		int offset = 0;
+		Vector<double> y(nx);
+		int n = b.Size();
 
-		for(int i=0;i<nc;++i) {
-			Vector<double> dbuffer(ndbuffer);
-			for(int j=0;j<nx;+j) {
-				int jp = j + offset;
-				for(int k=0;k<ndbufferm1;++k) {
-					dbuffer[k] = dbuffer[k+1];
-				}
-				dbuffer[ndbuffer] = 0.0;
-				for(int k=0;k<nb;++k) {
-					dbuffer[k] = dbuffer[k] + x[jp]*b[k];
-				}
-				for(int k=1;k<na;++k) {
-					dbuffer[k] = dbuffer[k] - dbuffer[0]*a[k];
-				}
-				y[jp] = dbuffer[0];
+		for(int i=n;i<nx;++i) {
+
+			y[i] = 0.0;
+			for(int k=0;k<n;++k) {
+				y[i] += b[k]*x[i-k];
 			}
-			offset = offset+nx;
+			for(int k=1;k<n;++k) {
+				y[i] -= a[k]*y[i-k];
+			}
 		}
 
 		return y;
