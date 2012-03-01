@@ -713,36 +713,36 @@ int ADXL345::set_data_format(bool self_test, bool spi, bool int_invert, bool ful
 
 int ADXL345::get_data_x_raw(short int &x) {
 	unsigned char lsb = 0;
-	unsigned char hsb = 0;
+	unsigned char msb = 0;
 
 	int status = read_byte(ADXL345_DATAX0,lsb);
-	status += read_byte(ADXL345_DATAX0,hsb);
+	status += read_byte(ADXL345_DATAX1,msb);
 
-	x = ((short int)hsb << 8) | lsb;
+	x = ((short int)msb << 8) | lsb;
 
 	return status;
 } 
 
 int ADXL345::get_data_y_raw(short int &y) {
 	unsigned char lsb = 0;
-	unsigned char hsb = 0;
+	unsigned char msb = 0;
 
 	int status = read_byte(ADXL345_DATAY0,lsb);
-	status += read_byte(ADXL345_DATAY0,hsb);
+	status += read_byte(ADXL345_DATAY1,msb);
 
-	y = ((short int)hsb << 8) | lsb;
+	y = ((short int)msb << 8) | lsb;
 
 	return status;
 }
 
 int ADXL345::get_data_z_raw(short int &z) {
 	unsigned char lsb = 0;
-	unsigned char hsb = 0;
+	unsigned char msb = 0;
 
 	int status = read_byte(ADXL345_DATAZ0,lsb);
-	status += read_byte(ADXL345_DATAZ0,hsb);
+	status += read_byte(ADXL345_DATAZ1,msb);
 
-	z = ((short int)hsb << 8) | lsb;
+	z = ((short int)msb << 8) | lsb;
 
 	return status;
 }
