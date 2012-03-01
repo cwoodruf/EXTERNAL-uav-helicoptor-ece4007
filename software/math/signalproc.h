@@ -80,8 +80,6 @@ namespace signalproc {
 
 	Vector<Complex> eig(Vector<Vector<Complex> > x) {
 		
-		throw "NOT IMPLMENTED: DO NOT USE POLY";
-
 		Vector<Vector<Complex> > Ac(x);
 		Vector<Vector<Complex> > Bc;
 		Vector<Complex> a1,b1;
@@ -253,8 +251,6 @@ namespace signalproc {
 	}
 
 	void bilinear(Vector<Vector<Complex> > &a, Vector<Vector<Complex> > &b, Vector<Vector<Complex> > &c, Vector<Vector<Complex> > &d, double fs) {
-
-		throw "NOT IMPLMENTED: DO NOT USE BILINEAR";
 
 		double t = 1/fs;
 		double r = sqrt(t);
