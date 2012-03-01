@@ -1,3 +1,25 @@
+/*
+* Copyright (c) 2012 Joey Yore
+*
+* Permission is hereby granted, free of charge, to any person obtaining a 
+* copy of this software and associated documentation files (the "Software"),
+* to deal in the Software without restriction, including without limitation 
+* the rights to use, copy, modify, merge, publish, distribute, sublicense, 
+* and/or sell copies of the Software, and to permit persons to whom the 
+* Software is furnished to do so, subject to the following conditions:
+*
+* The above copyright notice and this permission notice shall be included 
+* in all copies or substantial portions of the Software.
+*
+* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+* IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, 
+* FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL 
+* THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR 
+* OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, 
+* ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR 
+* OTHER DEALINGS IN THE SOFTWARE.
+*/
+
 #ifndef EML_H
 #define EML_H
 
@@ -18,6 +40,7 @@ namespace eml {
 	Complex zlangeM(Vector<Vector<Complex> > x) {
 		Complex y;
 
+		throw "NOT IMPLMENTED: DO NOT USE ZLANGEM";
 		if(x.Size()) {
 			for(int i=0,l=x.Size();i<l;++i) {
 				for(int j=0,m=x[i].Size();j<m;++j) {
@@ -33,12 +56,14 @@ namespace eml {
 	}
 
 	Vector<Vector<Complex> > zlascl(Complex from, Complex to, Vector<Vector<Complex> > A) {
-		std::cout << "WARNING: zlascl not implemented" << std::endl;
+		throw "NOT IMPLMENTED: DO NOT USE ZLASCL";
 		return A;
 	}
 
 	
 	void zggbal_eigsearch_rows(const Vector<Vector<Complex> > &A, const Vector<Vector<Complex> > &B,int ihi, int &i, int &j, bool &found) {
+
+		throw "NOT IMPLMENTED: DO NOT USE ZGGBAL_EIGSEARCH_ROWS";
 
 		i = 0;
 		j = 0;
@@ -71,6 +96,9 @@ namespace eml {
 
 
 	void zggbal_eigsearch_cols(Vector<Vector<Complex> > A, Vector<Vector<Complex> > B,int ilo, int ihi, int &i, int &j, bool &found) {
+
+		throw "NOT IMPLMENTED: DO NOT USE ZGGBAL_EIGSEARCH_COLS";
+
 		i = 0;
 		j = 0;
 		found = false;
@@ -100,6 +128,8 @@ namespace eml {
 
 
 	void zggbal_simtran(Vector<Vector<Complex> > &A,Vector<Vector<Complex> > &B,int m,int i,int j,int ilo, int ihi) {
+
+		throw "NOT IMPLMENTED: DO NOT USE ZGGBAL_SIMTRAN";
 
 		int n = A.Size();
 		bool isgen = !((bool)B.Size());
@@ -136,6 +166,9 @@ namespace eml {
 	}
 
 	void zggbal(Vector<Vector<Complex> > &A,Vector<Vector<Complex> > &B,int &ilo,int &ihi,Vector<Complex> &rscale) {
+
+		throw "NOT IMPLMENTED: DO NOT USE ZGGBAL";
+
 		int n = A.Size();
 		rscale = Vector<Complex>(n);
 		ilo = 0;
@@ -211,6 +244,8 @@ namespace eml {
 	}
 
 	void zgeqr2(Vector<Vector<Complex> > &A, int ijmin, int imax, int jmax,Vector<Complex> &tau) {
+
+		throw "NOT IMPLMENTED: DO NOT USE ZQEQR2";
 
 		double SAFMIN = 2 * SMLNUM;
 		double RSAFMN = 1/SAFMIN;
@@ -303,6 +338,8 @@ cout << n << endl;
 
 	void zgghrd(const char *compq, const char *compz, int ilo, int ihi, const Vector<Vector<Complex> > &A, const Vector<Vector<Complex> > &B) {
 
+		throw "NOT IMPLMENTED: DO NOT USE ZGGHRD";
+
 		int n = A.Size();
 
 		if(strcmp(compq,"N")) {
@@ -322,6 +359,8 @@ cout << n << endl;
 
 	void zggev(Vector<Vector<Complex> > Ac, Vector<Vector<Complex> > Bc, Vector<Complex> &a1, Vector<Complex> &b1) {
 	
+		throw "NOT IMPLMENTED: DO NOT USE ZGGEV";
+
 		if(Ac.Size() == 0) {
 			a1 = Vector<Complex>();
 			b1 = Vector<Complex>();
