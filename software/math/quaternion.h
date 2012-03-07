@@ -48,7 +48,7 @@ class Quaternion {
 		}
 
 		Vector3 rotate(Vector3 v) {
-			Quaternion vq(0.0f,v);
+			Quaternion vq(0.0,v);
 			Quaternion t = (*this) * vq * conjugate();
 
 			return Vector3(t.v);
@@ -65,9 +65,21 @@ class Quaternion {
 		Matrix3 rotation_matrix() {
 			double x = v[0], y = v[1], z = v[2];
 			return Matrix3(
-				1-2*(y*y+z*z),	2*x*y-2*s*z,	2*s*y+2*x*z, 
-				2*x*y+2*s*z,	1-2*(x*x+z*z),	-2*s*x+2*y*z,
-				-2*s*y+2*x*z,	2*s*x+2*y*z,	1-2*(x*x+y*y)
+				2*s*s-1+2*x*x, 2*(x*y+s*z), 2*(x*z-s*y),
+				2*(x*y-s*z), 2*s*s-1+2*y*y, 2*(y*z+s*x),
+				2*(x*z+s*y), 2*(y*z-s*x), 2*s*s-1+2*z*z
+			);
+		}
+
+		//Returns <phi, theta, psi>
+		Vector3 Euler_ZYX() {
+			
+			Matrix3 R = this->rotation_matrix();
+
+			return Vector3(
+				atan2(R(2,1),R(2,2)),
+				-atan(R(2,0) / sqrt(1-R(2,0)*R(2,0))),
+				atan2(R(1,0),R(0,0))
 			);
 		}
 
