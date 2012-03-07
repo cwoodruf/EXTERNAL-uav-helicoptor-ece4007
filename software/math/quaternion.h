@@ -124,6 +124,11 @@ class Quaternion {
 		Quaternion operator+(const Quaternion &rhs) {
 			return Quaternion(s+rhs.s,v+rhs.v);
 		}
+
+		double& operator[](const int &rhs) {
+			if(rhs <= 0) return s;
+			else return (rhs >= 2 ? v[2] : v[rhs]);
+		}
 };
 
 namespace quaternion {
