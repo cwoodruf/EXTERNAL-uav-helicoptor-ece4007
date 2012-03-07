@@ -1,3 +1,25 @@
+/*
+* Copyright (c) 2012 Joey Yore
+*
+* Permission is hereby granted, free of charge, to any person obtaining a 
+* copy of this software and associated documentation files (the "Software"),
+* to deal in the Software without restriction, including without limitation 
+* the rights to use, copy, modify, merge, publish, distribute, sublicense, 
+* and/or sell copies of the Software, and to permit persons to whom the 
+* Software is furnished to do so, subject to the following conditions:
+*
+* The above copyright notice and this permission notice shall be included 
+* in all copies or substantial portions of the Software.
+*
+* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+* IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, 
+* FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL 
+* THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR 
+* OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, 
+* ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR 
+* OTHER DEALINGS IN THE SOFTWARE.
+*/
+
 #ifndef AHRS_H
 #define AHRS_H
 
@@ -78,13 +100,13 @@ class AHRS {
 			//Adjusted Gyro Measurements
 			Vector ng = gyro + Kp*e + eInt;
 
-			//Integrate quaternion rate and nromalize
-			double halft = t/2;
-			Q = Quaernion(
+			//Integrate quaternion rate and normalize
+			double halft = t*0.5;
+			Q = Quaternion(
 				Q[0] + (-Q[1]*ng[0] - Q[2]*ng[1] - Q[3]*ng[2])*halft,
 				Q[1] + ( Q[0]*ng[0] + Q[2]*ng[2] - Q[3]*ng[1])*halft,
-				Q[1] + ( Q[0]*ng[1] - Q[1]*ng[2] + Q[3]*ng[0])*halft,
-				Q[1] + ( Q[0]*ng[2] + Q[1]*ng[1] - Q[2]*ng[0])*halft,
+				Q[2] + ( Q[0]*ng[1] - Q[1]*ng[2] + Q[3]*ng[0])*halft,
+				Q[3] + ( Q[0]*ng[2] + Q[1]*ng[1] - Q[2]*ng[0])*halft,
 			).normalize();
 
 			return Q;
