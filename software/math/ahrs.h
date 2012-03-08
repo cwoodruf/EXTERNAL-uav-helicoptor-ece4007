@@ -214,7 +214,7 @@ class AHRS {
 
 
 std::ostream& operator<<(std::ostream &os, const AHRS &q) {
-	os << "{ " << q.Kp << ", " << q.t << << ", " << q.Q << " }";
+	os << "{ " << q.Kp << ", " << q.t << ", " << q.Q << " }";
 	return os;
 }
 
