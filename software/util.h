@@ -155,7 +155,7 @@ double deg2rad(double deg) {
 }
 
 double rad2deg(double rad) {
-	return ((deg*180)/M_PI);
+	return ((rad*180)/M_PI);
 }
 
 #endif
