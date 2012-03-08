@@ -23,9 +23,10 @@
 #ifndef AHRS_H
 #define AHRS_H
 
+#include <math.h>
 #include "vector3.h"
 #include "quaternion.h"
-#include <math.h>
+#include "../util.h"
 
 class AHRS {
 
