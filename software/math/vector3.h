@@ -69,15 +69,15 @@ class Vector3 {
 			return Vector3(x*l,y*l,z*l);
 		}
 
-		double mag() {
+		double norm() {
 			return sqrt(x*x + y*y + z*z);
 		}
 
-		double xymag() {
+		double xynorm() {
 			return sqrt(x*x + y*y);
 		}
 
-		double squared_mag() {
+		double squared_norm() {
 			return x*x + y*y + z*z;
 		}
 

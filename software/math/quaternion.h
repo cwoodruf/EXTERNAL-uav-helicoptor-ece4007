@@ -23,6 +23,7 @@
 #define QUATERNION_H
 
 #include "vector3.h"
+#include "matrix3.h"
 #include <cmath>
 #include <iostream>
 
