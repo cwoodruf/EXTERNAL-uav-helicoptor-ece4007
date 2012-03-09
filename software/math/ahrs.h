@@ -76,7 +76,7 @@ class AHRS {
 			double qDot4 = 0.5 * ( Q[0] * gyro[2] + Q[1] * gyro[1] - Q[2] * gyro[0]);
 			
 			//Compute feedback only if accel is valid
-			if(accel != Vector(0.0,0.0,0.0)) {
+			if(accel != Vector3(0.0,0.0,0.0)) {
 			
 				//Normalize measurements
 				Vector3 a = accel.normalize();
@@ -114,10 +114,12 @@ class AHRS {
 
 				// Gradient decent algorithm corrective step
 				Quaternion S = Quaternion( 
-					-_2q2 * (2.0 * q1q3 - _2q0q2 - a[0]) + _2q1 * (2.0 * q0q1 + _2q2q3 - a[1]) - _2bz * Q[2]* (_2bx * (0.5f - q2q2 - q3q3) + _2bz * (q1q3 - q0q2) - m[0]) + (-_2bx * Q[3]+ _2bz * q1) * (_2bx * (q1q2 - q0q3) + _2bz * (q0q1 + q2q3) - m[1]) + _2bx * Q[2]* (_2bx * (q0q2 + q1q3) + _2bz * (0.5f - q1q1 - q2q2) - m[2]),
-					_2q3 * (2.0 * q1q3 - _2q0q2 - a[0]) + _2q0 * (2.0 * q0q1 + _2q2q3 - a[1]) - 4.0f * Q[1]* (1 - 2.0 * q1q1 - 2.0 * q2q2 - a[2]) + _2bz * Q[3]* (_2bx * (0.5f - q2q2 - q3q3) + _2bz * (q1q3 - q0q2) - m[0]) + (_2bx * Q[2]+ _2bz * q0) * (_2bx * (q1q2 - q0q3) + _2bz * (q0q1 + q2q3) - m[1]) + (_2bx * Q[3]- _4bz * q1) * (_2bx * (q0q2 + q1q3) + _2bz * (0.5f - q1q1 - q2q2) - m[2]),
-					-_2q0 * (2.0 * q1q3 - _2q0q2 - a[0]) + _2q3 * (2.0 * q0q1 + _2q2q3 - a[1]) - 4.0f * Q[2]* (1 - 2.0 * q1q1 - 2.0 * q2q2 - a[2]) + (-_4bx * Q[2]- _2bz * q0) * (_2bx * (0.5f - q2q2 - q3q3) + _2bz * (q1q3 - q0q2) - m[0]) + (_2bx * Q[1]+ _2bz * q3) * (_2bx * (q1q2 - q0q3) + _2bz * (q0q1 + q2q3) - m[1]) + (_2bx * Q[0]- _4bz * q2) * (_2bx * (q0q2 + q1q3) + _2bz * (0.5f - q1q1 - q2q2) - m[2]),
-					_2q1 * (2.0 * q1q3 - _2q0q2 - a[0]) + _2q2 * (2.0 * q0q1 + _2q2q3 - a[1]) + (-_4bx * Q[3]+ _2bz * q1) * (_2bx * (0.5f - q2q2 - q3q3) + _2bz * (q1q3 - q0q2) - m[0]) + (-_2bx * Q[0]+ _2bz * q2) * (_2bx * (q1q2 - q0q3) + _2bz * (q0q1 + q2q3) - m[1]) + _2bx * Q[1]* (_2bx * (q0q2 + q1q3) + _2bz * (0.5f - q1q1 - q2q2) - m[2])
+					-_2q2 * (2.0 * q1q3 - _2q0q2 - a[0]) + _2q1 * (2.0 * q0q1 + _2q2q3 - a[1]) - _2bz * Q[2]* (_2bx * (0.5f - q2q2 - q3q3) + _2bz * (q1q3 - q0q2) - m[0]) + (-_2bx * Q[3]+ _2bz * Q[1]) * (_2bx * (q1q2 - q0q3) + _2bz * (q0q1 + q2q3) - m[1]) + _2bx * Q[2]* (_2bx * (q0q2 + q1q3) + _2bz * (0.5f - q1q1 - q2q2) - m[2]),
+					Vector3(
+						_2q3 * (2.0 * q1q3 - _2q0q2 - a[0]) + _2q0 * (2.0 * q0q1 + _2q2q3 - a[1]) - 4.0f * Q[1]* (1 - 2.0 * q1q1 - 2.0 * q2q2 - a[2]) + _2bz * Q[3]* (_2bx * (0.5f - q2q2 - q3q3) + _2bz * (q1q3 - q0q2) - m[0]) + (_2bx * Q[2]+ _2bz * Q[0]) * (_2bx * (q1q2 - q0q3) + _2bz * (q0q1 + q2q3) - m[1]) + (_2bx * Q[3]- _4bz * Q[1]) * (_2bx * (q0q2 + q1q3) + _2bz * (0.5f - q1q1 - q2q2) - m[2]),
+						-_2q0 * (2.0 * q1q3 - _2q0q2 - a[0]) + _2q3 * (2.0 * q0q1 + _2q2q3 - a[1]) - 4.0f * Q[2]* (1 - 2.0 * q1q1 - 2.0 * q2q2 - a[2]) + (-_4bx * Q[2]- _2bz * Q[0]) * (_2bx * (0.5f - q2q2 - q3q3) + _2bz * (q1q3 - q0q2) - m[0]) + (_2bx * Q[1]+ _2bz * Q[3]) * (_2bx * (q1q2 - q0q3) + _2bz * (q0q1 + q2q3) - m[1]) + (_2bx * Q[0]- _4bz * Q[2]) * (_2bx * (q0q2 + q1q3) + _2bz * (0.5f - q1q1 - q2q2) - m[2]),
+						_2q1 * (2.0 * q1q3 - _2q0q2 - a[0]) + _2q2 * (2.0 * q0q1 + _2q2q3 - a[1]) + (-_4bx * Q[3]+ _2bz * Q[1]) * (_2bx * (0.5f - q2q2 - q3q3) + _2bz * (q1q3 - q0q2) - m[0]) + (-_2bx * Q[0]+ _2bz * Q[2]) * (_2bx * (q1q2 - q0q3) + _2bz * (q0q1 + q2q3) - m[1]) + _2bx * Q[1]* (_2bx * (q0q2 + q1q3) + _2bz * (0.5f - q1q1 - q2q2) - m[2])
+					)
 				).normalize();
 
 				// Apply feedback step
@@ -148,7 +150,7 @@ class AHRS {
 			double qDot4 = 0.5 * ( Q[0] * gyro[2] + Q[1] * gyro[1] - Q[2] * gyro[0]);
 			
 			//Compute feedback only if accel is valid
-			if(accel != Vector(0.0,0.0,0.0)) {
+			if(accel != Vector3(0.0,0.0,0.0)) {
 			
 				//Normalize measurements
 				Vector3 a = accel.normalize();
@@ -169,11 +171,13 @@ class AHRS {
 				double q3q3 = Q[3] * Q[3];
 
 				// Gradient decent algorithm corrective step
-				Quaternion S = Quatnerion(
+				Quaternion S = Quaternion(
 					_4q0 * q2q2 + _2q2 * a[0] + _4q0 * q1q1 - _2q1 * a[1],
-					_4q1 * q3q3 - _2q3 * a[0] + 4.0f * q0q0 * q1 - _2q0 * a[1] - _4q1 + _8q1 * q1q1 + _8q1 * q2q2 + _4q1 * a[2],
-					4.0f * q0q0 * q2 + _2q0 * a[0] + _4q2 * q3q3 - _2q3 * a[1] - _4q2 + _8q2 * q1q1 + _8q2 * q2q2 + _4q2 * a[2],
-					4.0f * q1q1 * q3 - _2q1 * a[0] + 4.0f * q2q2 * q3 - _2q2 * a[1]
+					Vector3(
+						_4q1 * q3q3 - _2q3 * a[0] + 4.0f * q0q0 * Q[1] - _2q0 * a[1] - _4q1 + _8q1 * q1q1 + _8q1 * q2q2 + _4q1 * a[2],
+						4.0f * q0q0 * Q[2] + _2q0 * a[0] + _4q2 * q3q3 - _2q3 * a[1] - _4q2 + _8q2 * q1q1 + _8q2 * q2q2 + _4q2 * a[2],
+						4.0f * q1q1 * Q[3] - _2q1 * a[0] + 4.0f * q2q2 * Q[3] - _2q2 * a[1]
+					)
 				).normalize();
 			
 			
