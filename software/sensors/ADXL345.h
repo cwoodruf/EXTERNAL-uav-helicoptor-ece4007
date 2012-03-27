@@ -82,10 +82,20 @@ using namespace std;
 #define ADXL345_ID					0x53
 
 
+int ScaleSelect[] = {
+	256, //2g
+	128, //4g
+	64,  //8g
+	32   //16g
+};
+
+
 class ADXL345 : public I2C {
 
 	private:
 		unsigned char range;
+		bool full_res;
+
 	public:
 		//Constructors
 		ADXL345();
@@ -161,11 +171,11 @@ class ADXL345 : public I2C {
 		int get_int_source(bool &data_ready, bool &single_tap, bool &double_tap, bool &activity, bool &inactivity, bool &free_fall, bool &watermark, bool &overrun);
 		int get_data_format(bool &self_test, bool &spi, bool &int_invert, bool &full_res, bool &justify, unsigned char &range);
 		int set_data_format(bool self_test, bool spi, bool int_invert, bool full_res, bool justify, unsigned char range);
-		//int get_data_x(short int &x);
+		int get_data_x(short int &x);
 		int get_data_x_raw(short int &x);
-		//int get_data_y(short int &y);
+		int get_data_y(short int &y);
 		int get_data_y_raw(short int &y);
-		//int get_data_z(short int &z);
+		int get_data_z(short int &z);
 		int get_data_z_raw(short int &z);
 
 
@@ -173,22 +183,23 @@ class ADXL345 : public I2C {
 		int set_standby_mode();
         int set_measurement_mode();
         int set_full_res();
+		int set_range(unsigned char o_range, bool o_full_res);
 
 };
 
 ADXL345::ADXL345() : I2C(3,ADXL345_ID) {
 	bool dummy;
-	get_data_format(dummy,dummy,dummy,dummy,dummy,this->range);
+	get_data_format(dummy,dummy,dummy,this->full_res,dummy,this->range);
 }
 
 ADXL345::ADXL345(int i) : I2C(i,ADXL345_ID) {
 	bool dummy;
-	get_data_format(dummy,dummy,dummy,dummy,dummy,this->range);
+	get_data_format(dummy,dummy,dummy,this->full_res,dummy,this->range);
 }
 
 ADXL345::ADXL345(bool) : I2C(3,ADXL345_ID_R,ADXL345_ID_W) {
 	bool dummy;
-	get_data_format(dummy,dummy,dummy,dummy,dummy,this->range);
+	get_data_format(dummy,dummy,dummy,this->full_res,dummy,this->range);
 }
 
 ADXL345::ADXL345(int i,bool) : I2C(i,ADXL345_ID_R,ADXL345_ID_W) {
@@ -723,6 +734,22 @@ int ADXL345::get_data_x_raw(short int &x) {
 	return status;
 } 
 
+//Output in mg
+int ADXL345::get_data_x(short int &x) {
+	int status = get_data_x_raw(x);
+
+	int iscale = 0;
+	if(this->full_Res) {
+		iscale = 4;		
+	} else {
+		iscale = ScaleSelect[this->range];
+	}
+
+	x = x / iscale * 4;
+
+	return status;	
+}
+
 int ADXL345::get_data_y_raw(short int &y) {
 	unsigned char lsb = 0;
 	unsigned char msb = 0;
@@ -735,6 +762,21 @@ int ADXL345::get_data_y_raw(short int &y) {
 	return status;
 }
 
+int ADXL345::get_data_y(short int &y) {
+	int status = get_data_y_raw(y);
+
+	int iscale = 0;
+	if(this->full_Res) {
+		iscale = 4;		
+	} else {
+		iscale = ScaleSelect[this->range];
+	}
+
+	y = y / iscale * 4;
+
+	return status;	
+}
+
 int ADXL345::get_data_z_raw(short int &z) {
 	unsigned char lsb = 0;
 	unsigned char msb = 0;
@@ -745,6 +787,21 @@ int ADXL345::get_data_z_raw(short int &z) {
 	z = ((short int)msb << 8) | lsb;
 
 	return status;
+}
+
+int ADXL345::get_data_z(short int &z) {
+	int status = get_data_z_raw(z);
+
+	int iscale = 0;
+	if(this->full_Res) {
+		iscale = 4;		
+	} else {
+		iscale = ScaleSelect[this->range];
+	}
+
+	z = z / iscale * 4;	
+
+	return status;	
 }
 
 int ADXL345::set_standby_mode() {
@@ -768,6 +825,22 @@ int ADXL345::set_full_res() {
 	unsigned char range;
 	int status = get_data_format(self_test,spi,int_invert,full_res,justify,range);
 	status += set_data_format(self_test,spi,int_invert,true,justify,0x3);
+	this->full_res = true;
 	return status;
+}
+
+int ADXL345::set_range(unsigned char o_range, bool o_full_res) {
+	bool self_test, spi, int_invert, full_res, justify;
+	unsigned char range;
+	int status = get_data_format(self_test,spi,int_invert,full_res,justify,range);
+	status += set_data_format(self_test,spi,int_invert,o_full_res,justify,o_range);
+	this->range = o_range;
+	this->full_res = o_full_res;
+	return status;
+}
+
+//Output in g
+double ADXL345_scale_output(short int v) {
+	return (double)v/1000*4;
 }
 #endif

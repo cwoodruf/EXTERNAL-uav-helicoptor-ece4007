@@ -38,7 +38,7 @@ class Graphics(threading.Thread):
 	def run(self):
 		self.eng.run()
 
-
+'''
 class Comm(threading.Thread):
 
 	terminate = False
@@ -69,6 +69,8 @@ class Comm(threading.Thread):
 	def update(self,x,y,z):
 		if self.eng is not None:
 			self.eng.update(x,y,z)
+'''
+
 
 class NoComm(threading.Thread):
 
