@@ -278,4 +278,8 @@ int ITG3200::set_power_management(bool h_reset, bool sleep, bool stby_xg, bool s
 	return write_byte(ITG3200_PWR_MGM,value);
 }
 
+double ITG3200_scale_output(short int v) {
+	return (double)v/14.375;
+}
+
 #endif
