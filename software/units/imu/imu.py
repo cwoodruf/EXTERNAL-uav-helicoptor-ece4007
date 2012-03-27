@@ -27,6 +27,7 @@ import board
 import threading
 import serial
 import time
+import ahrs
 
 PORT = '/dev/ttyACM0'
 
@@ -36,19 +37,27 @@ class Graphics(threading.Thread):
 
 	def run(self):
 		self.eng.run()
-'''
+
+
 class Comm(threading.Thread):
 
 	terminate = False
 	comm = serial.Serial(port=PORT)
+	algorithm = ahrs.AHRS()
 	eng = None
 
 	def run(self):
 		comm.open()
 		while(not self.terminate):
-			s = str(read(size=20))
+			s = str(read(size=62))
 			v = s.split(',')
-			self.update(float(v[0]),float(v[1]),float(v[2]))
+			algorithm.update(
+				float(v[0]), float(v[1]), float(v[2]),
+				float(v[3]), float(v[4]), float(v[5]),
+				float(v[6]), float(v[7]), float(v[8])
+			)
+			x,y,z = algorithm.transform()
+			self.update(x,y,z)
 		comm.close()
 
 	def kill(self):
@@ -60,7 +69,6 @@ class Comm(threading.Thread):
 	def update(self,x,y,z):
 		if self.eng is not None:
 			self.eng.update(x,y,z)
-'''
 
 class NoComm(threading.Thread):
 
