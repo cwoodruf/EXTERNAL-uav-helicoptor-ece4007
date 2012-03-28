@@ -14,6 +14,9 @@ class AHRS():
 	def update(self,gx,gy,gz,ax,ay,az,mx,my,mz):
 		q0 = self.q0; q1 = self.q1; q2 = self.q2; q3 = self.q3
 
+		gx *= 6; gy *= 6; gz *=6;
+		mx /= 100; my /= 100; mz /=100;
+
 		if mx == 0.0 and my == 0.0 and mz == 0.0:
 			return self.updateIMU(gx,gy,gz,ax,ay,az)
 
@@ -62,7 +65,9 @@ class AHRS():
 			s2 = -_2q0 * (2.0 * q1q3 - _2q0q2 - ax) + _2q3 * (2.0 * q0q1 + _2q2q3 - ay) - 4.0 * q2 * (1 - 2.0 * q1q1 - 2.0 * q2q2 - az) + (-_4bx * q2 - _2bz * q0) * (_2bx * (0.5 - q2q2 - q3q3) + _2bz * (q1q3 - q0q2) - mx) + (_2bx * q1 + _2bz * q3) * (_2bx * (q1q2 - q0q3) + _2bz * (q0q1 + q2q3) - my) + (_2bx * q0 - _4bz * q2) * (_2bx * (q0q2 + q1q3) + _2bz * (0.5 - q1q1 - q2q2) - mz)
 			s3 = _2q1 * (2.0 * q1q3 - _2q0q2 - ax) + _2q2 * (2.0 * q0q1 + _2q2q3 - ay) + (-_4bx * q3 + _2bz * q1) * (_2bx * (0.5 - q2q2 - q3q3) + _2bz * (q1q3 - q0q2) - mx) + (-_2bx * q0 + _2bz * q2) * (_2bx * (q1q2 - q0q3) + _2bz * (q0q1 + q2q3) - my) + _2bx * q1 * (_2bx * (q0q2 + q1q3) + _2bz * (0.5 - q1q1 - q2q2) - mz)
 
-			rmag = 1/math.sqrt(s0*s0 + s1*s1 + s2*s2 + s3*s3)
+			rmag = math.sqrt(s0*s0 + s1*s1 + s2*s2 + s3*s3)
+			if rmag != 0.0:
+				rmag = 1/rmag
 			s0 *= rmag; s1 *= rmag; s2 *= rmag; s3 *= rmag
 
 			qDot1 -= self.beta*s0
@@ -113,7 +118,9 @@ class AHRS():
 			s2 = 4.0 * q0q0 * q2 + _2q0 * ax + _4q2 * q3q3 - _2q3 * ay - _4q2 + _8q2 * q1q1 + _8q2 * q2q2 + _4q2 * az;
 			s3 = 4.0 * q1q1 * q3 - _2q1 * ax + 4.0 * q2q2 * q3 - _2q2 * ay;
 
-			rmag = 1/math.sqrt(s0*s0 + s1*s1 + s2*s2 + s3*s3)
+			rmag = math.sqrt(s0*s0 + s1*s1 + s2*s2 + s3*s3)
+			if rmag != 0.0:
+				rmag = 1/rmag
 			s0 *= rmag; s1 *= rmag; s2 *= rmag; s3 *= rmag
 
 			qDot1 -= self.beta*s0
@@ -133,7 +140,10 @@ class AHRS():
 		return (self.q0,self.q1,self.q2,self.q3)
 
 	def rad2deg(self,rad):
-		return rad*180/math.pi
+		return rad*180.0/math.pi
+
+	def deg2rad(self,deg):
+		return deg*math.pi/180.0
 
 	def get_conj(self):
 		return (self.q0,-self.q1,-self.q2,-self.q3)

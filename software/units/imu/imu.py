@@ -38,7 +38,7 @@ class Graphics(threading.Thread):
 	def run(self):
 		self.eng.run()
 
-'''
+
 class Comm(threading.Thread):
 
 	terminate = False
@@ -47,18 +47,22 @@ class Comm(threading.Thread):
 	eng = None
 
 	def run(self):
-		comm.open()
+		self.comm.close()
+		self.comm.baudrate = 115200
+		self.comm.open()
+		self.comm.flush()
 		while(not self.terminate):
-			s = str(read(size=62))
+			s = str(self.comm.readline()).strip()
 			v = s.split(',')
-			algorithm.update(
+			self.algorithm.update(
 				float(v[0]), float(v[1]), float(v[2]),
 				float(v[3]), float(v[4]), float(v[5]),
 				float(v[6]), float(v[7]), float(v[8])
 			)
-			x,y,z = algorithm.transform()
+
+			x,y,z = self.algorithm.transform()
 			self.update(x,y,z)
-		comm.close()
+		self.comm.close()
 
 	def kill(self):
 		self.terminate = True
@@ -68,8 +72,8 @@ class Comm(threading.Thread):
 
 	def update(self,x,y,z):
 		if self.eng is not None:
-			self.eng.update(x,y,z)
-'''
+			self.eng.update(x,y,-z)
+
 
 
 class NoComm(threading.Thread):
@@ -130,8 +134,8 @@ class NoComm(threading.Thread):
 
 
 g = Graphics()
-nc = NoComm()
-nc.register_engine(g.eng)
+c = Comm()
+c.register_engine(g.eng)
 
 g.start()
-nc.start()
+c.start()
