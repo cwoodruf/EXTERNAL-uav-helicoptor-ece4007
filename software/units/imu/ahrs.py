@@ -23,6 +23,10 @@ OTHER DEALINGS IN THE SOFTWARE.
 
 import math
 
+GYRO_SENSOR_ADJUST = 6.575
+ACCEL_SENSOR_ADJUST = 1
+MAGN_SENSOR_ADJUST = 1
+
 class AHRS():
 
 	q0 = 1.0
@@ -37,8 +41,10 @@ class AHRS():
 	def update(self,gx,gy,gz,ax,ay,az,mx,my,mz):
 		q0 = self.q0; q1 = self.q1; q2 = self.q2; q3 = self.q3
 
-		gx *= 6; gy *= 6; gz *=6;
-		mx /= 100; my /= 100; mz /=100;
+		gx *= GYRO_SENSOR_ADJUST; gy *= GYRO_SENSOR_ADJUST; gz *= GYRO_SENSOR_ADJUST;
+		ax *= ACCEL_SENSOR_ADJUST; ay *= ACCEL_SENSOR_ADJUST; az *= ACCEL_SENSOR_ADJUST;
+		mx *= MAGN_SENSOR_ADJUST; my *= MAGN_SENSOR_ADJUST; mz *= MAGN_SENSOR_ADJUST;
+
 
 		if mx == 0.0 and my == 0.0 and mz == 0.0:
 			return self.updateIMU(gx,gy,gz,ax,ay,az)
@@ -187,3 +193,347 @@ class AHRS():
 	def transform(self):
 		x,y,z = self.toEuler(self.get_conj())
 		return (self.rad2deg(x),self.rad2deg(y),self.rad2deg(z))
+
+
+
+class MARG():
+
+	def __init__(self,rate=0.0,error=0.0,drift=0.0):
+
+		self.rate = self.deltat = rate
+		self.error = error
+		self.drift = drift
+
+		self.first_update = 0
+
+		self.AEq_1 = 1; self.AEq_2 = 0; self.AEq_3 = 0; self.AEq_4 = 0
+		self.SEq_1 = 1; self.SEq_2 = 0; self.SEq_3 = 0; self.SEq_4 = 0
+
+		self.b_x = 1; self.b_z = 0
+
+		self.w_bx = 0; self.w_by = 0; self.w_bz = 0
+		
+		#self.beta = math.sqrt(3.0/4.0) * (math.pi * (self.error/180))
+		self.beta = 0.1
+		self.zeta = math.sqrt(3.0/4.0) * (math.pi * (self.drift/180))
+
+
+	def update(self,w_x,w_y,w_z,a_x,a_y,a_z,m_x,m_y,m_z):
+
+		halfSEq_1 = 0.5 * self.SEq_1
+		halfSEq_2 = 0.5 * self.SEq_2
+		halfSEq_3 = 0.5 * self.SEq_3
+		halfSEq_4 = 0.5 * self.SEq_4
+		twoSEq_1 = 2.0 * self.SEq_1
+		twoSEq_2 = 2.0 * self.SEq_2
+		twoSEq_3 = 2.0 * self.SEq_3
+		twoSEq_4 = 2.0 * self.SEq_4
+		twob_x = 2.0 * self.b_x
+		twob_z = 2.0 * self.b_z
+		twob_xSEq_1 = 2.0 * self.b_x * self.SEq_1
+		twob_xSEq_2 = 2.0 * self.b_x * self.SEq_2
+		twob_xSEq_3 = 2.0 * self.b_x * self.SEq_3
+		twob_xSEq_4 = 2.0 * self.b_x * self.SEq_4
+		twob_zSEq_1 = 2.0 * self.b_z * self.SEq_1
+		twob_zSEq_2 = 2.0 * self.b_z * self.SEq_2
+		twob_zSEq_3 = 2.0 * self.b_z * self.SEq_3
+		twob_zSEq_4 = 2.0 * self.b_z * self.SEq_4
+		SEq_1SEq_2 = 0
+		SEq_1SEq_3 = self.SEq_1 * self.SEq_3
+		SEq_1SEq_4 = 0
+		SEq_2SEq_3 = 0
+		SEq_2SEq_4 = self.SEq_2 * self.SEq_4
+		SEq_3SEq_4 = 0
+		twom_x = 2.0 * m_x
+		twom_y = 2.0 * m_y
+		twom_z = 2.0 * m_z
+
+		norm = math.sqrt(a_x * a_x + a_y * a_y + a_z * a_z)
+		if norm == 0.0:
+			a_x = 0; a_y = 0; a_z = 0
+		else:
+			a_x /= norm;  a_y /= norm;  a_z /= norm
+
+		norm = math.sqrt(m_x * m_x + m_y * m_y + m_z * m_z)
+		if norm == 0.0:
+			m_x = 0; m_y = 0; m_z = 0
+		else:
+			m_x /= norm;  m_y /= norm;  m_z /= norm
+
+
+		f_1 = twoSEq_2 * self.SEq_4 - twoSEq_1 * self.SEq_3 - a_x
+		f_2 = twoSEq_1 * self.SEq_2 + twoSEq_3 * self.SEq_4 - a_y
+		f_3 = 1.0 - twoSEq_2 * self.SEq_2 - twoSEq_3 * self.SEq_3 - a_z
+		f_4 = twob_x * (0.5 - self.SEq_3 * self.SEq_3 - self.SEq_4 * self.SEq_4) + twob_z * (SEq_2SEq_4 - SEq_1SEq_3) - m_x
+		f_5 = twob_x * (self.SEq_2 * self.SEq_3 - self.SEq_1 * self.SEq_4) + twob_z * (self.SEq_1 * self.SEq_2 + self.SEq_3 * self.SEq_4) - m_y
+		f_6 = twob_x * (SEq_1SEq_3 + SEq_2SEq_4) + twob_z * (0.5 - self.SEq_2 * self.SEq_2 - self.SEq_3 * self.SEq_3) - m_z
+		J_11or24 = twoSEq_3
+		J_12or23 = 2.0 * self.SEq_4
+		J_13or22 = twoSEq_1
+		J_14or21 = twoSEq_2
+		J_32 = 2.0 * J_14or21
+		J_33 = 2.0 * J_11or24
+		J_41 = twob_zSEq_3
+		J_42 = twob_zSEq_4
+		J_43 = 2.0 * twob_xSEq_3 + twob_zSEq_1
+		J_44 = 2.0 * twob_xSEq_4 - twob_zSEq_2
+		J_51 = twob_xSEq_4 - twob_zSEq_2
+		J_52 = twob_xSEq_3 + twob_zSEq_1
+		J_53 = twob_xSEq_2 + twob_zSEq_4
+		J_54 = twob_xSEq_1 - twob_zSEq_3
+		J_61 = twob_xSEq_3
+		J_62 = twob_xSEq_4 - 2.0 * twob_zSEq_2
+		J_63 = twob_xSEq_1 - 2.0 * twob_zSEq_3
+		J_64 = twob_xSEq_2
+
+		SEqHatDot_1 = J_14or21 * f_2 - J_11or24 * f_1 - J_41 * f_4 - J_51 * f_5 + J_61 * f_6
+		SEqHatDot_2 = J_12or23 * f_1 + J_13or22 * f_2 - J_32 * f_3 + J_42 * f_4 + J_52 * f_5 + J_62 * f_6
+		SEqHatDot_3 = J_12or23 * f_2 - J_33 * f_3 - J_13or22 * f_1 - J_43 * f_4 + J_53 * f_5 + J_63 * f_6
+		SEqHatDot_4 = J_14or21 * f_1 + J_11or24 * f_2 - J_44 * f_4 - J_54 * f_5 + J_64 * f_6
+
+		norm = math.sqrt(SEqHatDot_1 * SEqHatDot_1 + SEqHatDot_2 * SEqHatDot_2 + SEqHatDot_3 * SEqHatDot_3 + SEqHatDot_4 * SEqHatDot_4)
+		if norm == 0:
+			SEqHatDot_1 = 0
+			SEqHatDot_2 = 0
+			SEqHatDot_3 = 0
+			SEqHatDot_4 = 0
+		else:
+			SEqHatDot_1 = SEqHatDot_1 / norm
+			SEqHatDot_2 = SEqHatDot_2 / norm
+			SEqHatDot_3 = SEqHatDot_3 / norm
+			SEqHatDot_4 = SEqHatDot_4 / norm
+
+		w_err_x = twoSEq_1 * SEqHatDot_2 - twoSEq_2 * SEqHatDot_1 - twoSEq_3 * SEqHatDot_4 + twoSEq_4 * SEqHatDot_3
+		w_err_y = twoSEq_1 * SEqHatDot_3 + twoSEq_2 * SEqHatDot_4 - twoSEq_3 * SEqHatDot_1 - twoSEq_4 * SEqHatDot_2
+		w_err_z = twoSEq_1 * SEqHatDot_4 - twoSEq_2 * SEqHatDot_3 + twoSEq_3 * SEqHatDot_2 - twoSEq_4 * SEqHatDot_1
+
+		self.w_bx += w_err_x * self.deltat * self.zeta
+		self.w_by += w_err_y * self.deltat * self.zeta
+		self.w_bz += w_err_z * self.deltat * self.zeta
+		w_x -= self.w_bx
+		w_y -= self.w_by
+		w_z -= self.w_bz
+
+		SEqDot_omega_1 = -halfSEq_2 * w_x - halfSEq_3 * w_y - halfSEq_4 * w_z
+		SEqDot_omega_2 = halfSEq_1 * w_x + halfSEq_3 * w_z - halfSEq_4 * w_y
+		SEqDot_omega_3 = halfSEq_1 * w_y - halfSEq_2 * w_z + halfSEq_4 * w_x
+		SEqDot_omega_4 = halfSEq_1 * w_z + halfSEq_2 * w_y - halfSEq_3 * w_x
+
+		self.SEq_1 += (SEqDot_omega_1 - (self.beta * SEqHatDot_1)) * self.deltat
+		self.SEq_2 += (SEqDot_omega_2 - (self.beta * SEqHatDot_2)) * self.deltat
+		self.SEq_3 += (SEqDot_omega_3 - (self.beta * SEqHatDot_3)) * self.deltat
+		self.SEq_4 += (SEqDot_omega_4 - (self.beta * SEqHatDot_4)) * self.deltat
+		print SEqDot_omega_1,SEqDot_omega_2,SEqDot_omega_3,SEqDot_omega_4
+
+		norm = math.sqrt(self.SEq_1 * self.SEq_1 + self.SEq_2 * self.SEq_2 + self.SEq_3 * self.SEq_3 + self.SEq_4 * self.SEq_4)
+		if norm == 0:
+			self.SEq_1 = 0
+			self.SEq_2 = 0
+			self.SEq_3 = 0
+			self.SEq_4 = 0
+		else:
+			self.SEq_1 /= norm
+			self.SEq_2 /= norm
+			self.SEq_3 /= norm
+			self.SEq_4 /= norm
+
+		SEq_1SEq_2 = self.SEq_1 * self.SEq_2
+		SEq_1SEq_3 = self.SEq_1 * self.SEq_3
+		SEq_1SEq_4 = self.SEq_1 * self.SEq_4
+		SEq_3SEq_4 = self.SEq_3 * self.SEq_4
+		SEq_2SEq_3 = self.SEq_2 * self.SEq_3
+		SEq_2SEq_4 = self.SEq_2 * self.SEq_4
+
+		h_x = twom_x * (0.5 - self.SEq_3 * self.SEq_3 - self.SEq_4 * self.SEq_4) + twom_y * (SEq_2SEq_3 - SEq_1SEq_4) + twom_z * (SEq_2SEq_4 + SEq_1SEq_3)
+
+		h_y = twom_x * (SEq_2SEq_3 + SEq_1SEq_4) + twom_y * (0.5 - self.SEq_2 * self.SEq_2 - self.SEq_4 * self.SEq_4) + twom_z * (SEq_3SEq_4 - SEq_1SEq_2)
+		h_z = twom_x * (SEq_2SEq_4 - SEq_1SEq_3) + twom_y * (SEq_3SEq_4 + SEq_1SEq_2) + twom_z * (0.5 - self.SEq_2 * self.SEq_2 - self.SEq_3 * self.SEq_3)
+
+		self.b_x = math.sqrt((h_x * h_x) + (h_y * h_y))
+		self.b_z = h_z
+
+		if self.first_update == 0:
+			self.AEq_1 = self.SEq_1;
+			self.AEq_2 = self.SEq_2;
+			self.AEq_3 = self.SEq_3;
+			self.AEq_4 = self.SEq_4;
+			self.first_update = 1;
+	
+
+		self.to_euler()
+
+
+	def to_euler(self):
+		ESq_1 = self.SEq_1
+		ESq_2 = -self.SEq_2
+		ESq_3 = -self.SEq_3
+		ESq_4 = -self.SEq_4
+
+		ASq_1 = ESq_1 * self.AEq_1 - ESq_2 * self.AEq_2 - ESq_3 * self.AEq_3 - ESq_4 * self.AEq_4
+		ASq_2 = ESq_1 * self.AEq_2 + ESq_2 * self.AEq_1 + ESq_3 * self.AEq_4 - ESq_4 * self.AEq_3
+		ASq_3 = ESq_1 * self.AEq_3 - ESq_2 * self.AEq_4 + ESq_3 * self.AEq_1 + ESq_4 * self.AEq_2
+		ASq_4 = ESq_1 * self.AEq_4 + ESq_2 * self.AEq_3 - ESq_3 * self.AEq_2 + ESq_4 * self.AEq_1
+
+		self.phi = math.atan2(2 * ASq_3 * ASq_4 - 2 * ASq_1 * ASq_2, 2 * ASq_1 * ASq_1 + 2 * ASq_4 * ASq_4 - 1)
+		self.theta = math.asin(2 * ASq_2 * ASq_3 - 2 * ASq_1 * ASq_3)
+		self.psi = math.atan2(2 * ASq_2 * ASq_3 - 2 * ASq_1 * ASq_4, 2 * ASq_1 * ASq_1 + 2 * ASq_2 * ASq_2 - 1)
+
+	def get_orientation(self):
+		return (self.phi,self.theta,self.psi)
+
+	def reset(self):
+		self.first_update = 0
+
+		self.AEq_1 = 1; self.AEq_2 = 0; self.AEq_3 = 0; self.AEq_4 = 0
+		self.SEq_1 = 1; self.SEq_2 = 0; self.SEq_3 = 0; self.SEq_4 = 0
+
+		self.b_x = 1; self.b_z
+
+		self.w_bx = 0; self.w_by = 0; self.w_bz = 0
+
+
+class MARG2():
+
+	def __init__(self,period=1/256):
+
+		self.period = period
+		self.quaternion = [1, 0, 0, 0]
+		self.beta = 0
+
+
+	def update(self,gyro,accel,magn):
+		q = self.quaternion
+
+		norm = math.sqrt(accel[0]*accel[0]+accel[1]*accel[1]+accel[2]*accel[2])
+		if norm == 0:
+			accel[0] = 0; accel[1] = 0; accel[2] = 0
+		else:
+			accel[0] /= norm; accel[1] /= norm;	accel[2] /= norm
+
+		norm = math.sqrt(magn[0]*magn[0]+magn[1]*magn[1]+magn[2]*magn[2])
+		if norm == 0:
+			magn[0] = 0; magn[1] = 0; magn[2] = 0
+		else:
+			magn[0] /= norm; magn[1] /= norm; magn[2] /= norm
+
+		h = quatern_prod(q,quatern_prod([0, magn[0], magn[1], magn[2]], quatern_conj(q)))
+
+		norm = math.sqrt(h[1]*h[1]+h[2]*h[2]+h[3]*h[3])
+		if norm == 0:
+			h[1] = 0; h[2] = 0; h[3] = 0
+		else:
+			h[1] /= norm; h[2] /= norm; h[3] /= norm
+		
+		b = [0, h[1], h[2], h[3]]
+
+		F = [
+			2*(q[1]*q[3] - q[0]*q[2]) - accel[0],
+			2*(q[0]*q[1] + q[2]*q[3]) - accel[1],
+			2*(0.5 - q[1]*q[1] - q[2]*q[2]) - accel[2],
+			2*b[1]*(0.5 - q[2]*q[2] - q[3]*q[3]) + 2*b[3]*(q[1]*q[3]) - magn[0],
+			2*b[1]*(q[1]*q[2] - q[0]*q[3]) + 2*b[3]*(q[0]*q[1] + q[2]*q[3]) - magn[1],
+			2*b[1]*(q[0]*q[2] + q[1]*q[3]) + 2*b[3]*(0.5 - q[1]*q[1] - q[2]*q[2]) - magn[2]
+		]
+
+		J = [
+			-2*q[2], 2*q[3], -2*q[0], 2*q[1],
+			2*q[1], 2*q[0], 2*q[3], 2*q[2],
+			0,-4*q[1],-4*q[2],0,
+			-2*b[3]*q[2],2*b[3]*q[3],-4*b[1]*q[2]-2*b[3]*q[0],-4*b[1]*b[3]+2*b[3]*q[1],
+			-2*b[1]*q[3]+2*b[3]*q[1],2*b[1]*q[2]+2*b[3]*q[0],2*b[1]*q[1]+2*b[3]*q[3],-2*b[1]*q[0]+2*b[3]*q[3],
+			2*b[1]*q[2],2*b[1]*q[3]-4*b[3]*q[1],2*b[1]*q[0]-4*b[3]*q[2],2*b[1]*q[1]
+		]
+
+
+		step = F[0]*J[0] + F[1]*J[1] + F[2]*J[2] + F[3]*J[3] + F[4]*J[4] + F[5]*J[5]
+
+		qDot = [0, 0, 0, 0]
+		t = quatern_prod(q,[0,gyro[0],gyro[1],gyro[2]])
+		qDot[0] = 0.5 * t[0] - self.beta*step
+		qDot[1] = 0.5 * t[1] - self.beta*step
+		qDot[2] = 0.5 * t[2] - self.beta*step
+		qDot[3] = 0.5 * t[3] - self.beta*step
+	
+		q[0] += qDot[0] * self.period
+		q[1] += qDot[1] * self.period
+		q[2] += qDot[2] * self.period
+		q[3] += qDot[3] * self.period
+
+		norm = math.sqrt(q[0]*q[0]+q[1]*q[1]+q[2]*q[2]+q[3]*q[3])
+		if norm == 0:
+			q[0] = 0; q[1] = 0; q[2] = 0; q[3] = 0
+		else:
+			q[0] /= norm; q[1] /= norm;	q[2] /= norm; q[3] /= norm
+
+		self.quaternion = q
+
+	def updateIMU(self,gyro,accel):
+
+		q = self.quaternion
+
+		norm = math.sqrt(accel[0]*accel[0]+accel[1]*accel[1]+accel[2]*accel[2])
+		if norm == 0:
+			accel[0] = 0; accel[1] = 0; accel[2] = 0
+		else:
+			accel[0] /= norm; accel[1] /= norm;	accel[2] /= norm
+
+		F = [
+			2*(q[1]*q[3] - q[0]*q[2]) - accel[0],
+			2*(q[0]*q[1] + q[2]*q[3]) - accel[1],
+			2*(0.5 - q[1]*q[1] - q[2]*q[2]) - accel[2]
+		]
+
+		J = [
+			-2*q[2],  2*q[3], -2*q[0], 2*q[1],
+			 2*q[1],  2*q[0],  2*q[3], 2*q[2],
+			      0, -4*q[1], -4*q[2], 0
+		]
+
+		step = [
+			[J[0]*F[0], J[0]*F[1], J[0]*F[2]],
+			[J[1]*F[0], J[1]*F[1], J[1]*F[2]],
+			[J[2]*F[0], J[2]*F[1], J[2]*F[2]],
+			[J[3]*F[0], J[3]*F[1], J[3]*F[2]],
+			[J[4]*F[0], J[4]*F[1], J[4]*F[2]],
+			[J[5]*F[0], J[5]*F[1], J[5]*F[2]],
+			[J[6]*F[0], J[6]*F[1], J[6]*F[2]],
+			[J[7]*F[0], J[7]*F[1], J[7]*F[2]],
+			[J[8]*F[0], J[8]*F[1], J[8]*F[2]],
+			[J[9]*F[0], J[9]*F[1], J[9]*F[2]],
+			[J[10]*F[0], J[10]*F[1], J[10]*F[2]],
+			[J[11]*F[0], J[11]*F[1], J[11]*F[2]],
+		]
+
+
+	def transform(self):
+		q = quatern_conj(self.quaternion)
+		return quatern_2_euler(q)
+
+
+
+def quatern_prod(a,b):
+	r = [0, 0, 0, 0]
+
+	r[0] = a[0]*b[0] - a[1]*b[1] - a[2]*b[2] - a[3]*b[3]
+	r[1] = a[0]*b[1] + a[1]*b[0] + a[2]*b[3] - a[3]*b[2]
+	r[2] = a[0]*b[2] - a[1]*b[3] + a[2]*b[0] - a[3]*b[1]
+	r[3] = a[0]*b[3] + a[1]*b[2] - a[2]*b[1] - a[3]*b[0]
+
+	return r
+
+def quatern_conj(a):
+	return [a[0], -a[1], -a[2], -a[3]]
+
+def quatern_2_euler(q):
+
+	R11 = 2*q[0]*q[0] + 2*q[1]*q[1]
+	R21 = 2*(q[1]*q[2] - q[0]*q[3])
+	R31 = 2*(q[1]*q[3] + q[0]*q[2])
+	R32 = 2*(q[2]*q[3] - q[0]*q[1])
+	R33 = 2*q[0]*q[0] - 1 + 2*q[3]*q[3]
+
+	phi = math.atan2(R32,R33)
+	theta = -math.atan(R31 / math.sqrt(1-R31*R31))
+	psi = math.atan2(R21,R11)
+
+	return phi,theta,psi

@@ -37,17 +37,18 @@ class Board(engine.Engine):
 	x_angle = 0
 	y_angle = 0
 	z_angle = 0
+	threads = []
 
 	def display(self):
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 		glLoadIdentity()
-
+	
 		glTranslatef(0,0,-10)
 		glRotatef(self.x_angle,1,0,0)
 		glRotatef(self.y_angle,0,1,0)
 		glRotatef(self.z_angle,0,0,1)
 
-		glBegin(GL_QUADS)
+		glBegin(GL_QUADS)	
 
 		glColor3f(0,0,0); glVertex3f(-.2,-1,-.025)
 		glColor3f(0,0,1); glVertex3f(-.2,-1,.025)
@@ -79,7 +80,7 @@ class Board(engine.Engine):
 		glColor3f(1,1,1); glVertex3f(.2,1,.025)
 		glColor3f(1,0,1); glVertex3f(.2,-1,.025)
 
-		glEnd()
+		glEnd()	
 
 		glFlush()
 		glutSwapBuffers()
@@ -98,7 +99,13 @@ class Board(engine.Engine):
 
 	def keyboard(self,key,x,y):
 		if key == 'q' or key == 'Q' or key == 27:
+			for t in self.threads:
+				t.kill()
+				t.join()
 			sys.exit(0)
+
+	def register_thread(self,thread):
+		self.threads.append(thread)
 
 	def update(self,x,y,z):
 		self.x_angle = x

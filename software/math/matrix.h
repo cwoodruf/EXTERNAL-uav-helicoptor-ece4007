@@ -53,6 +53,7 @@ class Matrix {
 		void setCol(int c, double *vals);
 		void setElement(int r, int c, double val);
 		Matrix transpose();
+		double norm();
 		double determinant();
 		Matrix cofactor();
 		Matrix adjoint();
@@ -816,6 +817,17 @@ Matrix Matrix::transpose() {
 	}
 
 	return t;
+}
+
+double Matrix::norm() {
+
+	double n = 0.0;
+	for(int i=0;i<nrow;++i) {
+		for(int j=0;j<ncol;++j) {
+			n += elements[i][j]*elements[i][j];
+		}
+	}
+	return sqrt(n);
 }
 
 //Find the determinant

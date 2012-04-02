@@ -140,7 +140,7 @@ class Quaternion {
 
 		double& operator[](const int &rhs) {
 			if(rhs <= 0) return s;
-			else return (rhs >= 2 ? v[2] : v[rhs]);
+			else return (rhs >= 3 ? v[2] : v[rhs-1]);
 		}
 };
 

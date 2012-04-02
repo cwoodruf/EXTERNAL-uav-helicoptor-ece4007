@@ -31,6 +31,13 @@ import ahrs
 
 PORT = '/dev/ttyACM0'
 
+def abs(x):
+	if x < 0:
+		return -x
+	else:
+		return x
+
+
 class Graphics(threading.Thread):
 
 	eng = board.Board(sys.argv,name="IMU")
@@ -38,29 +45,50 @@ class Graphics(threading.Thread):
 	def run(self):
 		self.eng.run()
 
+	def register_thread(self,thread):
+		self.eng.register_thread(thread)
+
 
 class Comm(threading.Thread):
 
 	terminate = False
 	comm = serial.Serial(port=PORT)
 	algorithm = ahrs.AHRS()
+	marg = ahrs.MARG(1/512,0,0)
+	marg2 = ahrs.MARG2()
 	eng = None
 
 	def run(self):
 		self.comm.close()
 		self.comm.baudrate = 115200
 		self.comm.open()
-		self.comm.flush()
+		s = str(self.comm.readline()).strip()
 		while(not self.terminate):
 			s = str(self.comm.readline()).strip()
 			v = s.split(',')
-			self.algorithm.update(
-				float(v[0]), float(v[1]), float(v[2]),
-				float(v[3]), float(v[4]), float(v[5]),
-				float(v[6]), float(v[7]), float(v[8])
-			)
+			#self.algorithm.update(
+			#	float(v[0]), float(v[1]), float(v[2]),
+			#	float(v[3]), float(v[4]), float(v[5]),
+			#	float(v[6]), float(v[7]), float(v[8])
+			#)
 
-			x,y,z = self.algorithm.transform()
+			#x,y,z = self.algorithm.transform()
+
+			#self.marg.update(
+			#	float(v[0]), float(v[1]), float(v[2]),
+			#	float(v[3]), float(v[4]), float(v[5]),
+			#	float(v[6]), float(v[7]), float(v[8])
+			#)
+			#x,y,z = self.marg.get_orientation()
+
+			#self.marg2.update(
+			#	[float(v[0]), float(v[1]), float(v[2])],
+			#	[float(v[3]), float(v[4]), float(v[5])],
+			#	[float(v[6]), float(v[7]), float(v[8])]
+			#)
+
+			#x,y,z = self.marg2.transform()
+
 			self.update(x,y,z)
 		self.comm.close()
 
@@ -72,7 +100,8 @@ class Comm(threading.Thread):
 
 	def update(self,x,y,z):
 		if self.eng is not None:
-			self.eng.update(x,y,-z)
+			print "<%s,%s,%s>" % (x,y,z)
+			self.eng.update(x,y,z)
 
 
 
@@ -136,6 +165,7 @@ class NoComm(threading.Thread):
 g = Graphics()
 c = Comm()
 c.register_engine(g.eng)
+g.register_thread(c)
 
 g.start()
 c.start()

@@ -739,7 +739,7 @@ int ADXL345::get_data_x(short int &x) {
 	int status = get_data_x_raw(x);
 
 	int iscale = 0;
-	if(this->full_Res) {
+	if(this->full_res) {
 		iscale = 4;		
 	} else {
 		iscale = ScaleSelect[this->range];
@@ -766,7 +766,7 @@ int ADXL345::get_data_y(short int &y) {
 	int status = get_data_y_raw(y);
 
 	int iscale = 0;
-	if(this->full_Res) {
+	if(this->full_res) {
 		iscale = 4;		
 	} else {
 		iscale = ScaleSelect[this->range];
@@ -793,7 +793,7 @@ int ADXL345::get_data_z(short int &z) {
 	int status = get_data_z_raw(z);
 
 	int iscale = 0;
-	if(this->full_Res) {
+	if(this->full_res) {
 		iscale = 4;		
 	} else {
 		iscale = ScaleSelect[this->range];

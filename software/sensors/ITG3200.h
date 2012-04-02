@@ -191,7 +191,7 @@ int ITG3200::set_interrupt_conf(bool actl, bool open, bool latch_int_en, bool in
 			(int_anyrd_2clear << 4) |
 			(itg_rdy_en << 2) |
 			(0 << 1) |
-			raw_rdy_en & ITG3200_INTCFG_RAW_RDY_EN;
+			(raw_rdy_en & ITG3200_INTCFG_RAW_RDY_EN);
 
 
 	return write_byte(ITG3200_INT_CFG,value);
