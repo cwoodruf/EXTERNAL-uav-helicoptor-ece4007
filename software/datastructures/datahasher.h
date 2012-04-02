@@ -34,11 +34,11 @@ class DataHasher {
 	public:
 
 		DataHasher() {
-			HSTART = 0xBB40E64DA205B064;
-			HMULT = 766435821815920749;
+			HSTART = 0xBB40E64DA205B064L;
+			HMULT = 766435821815920749L;
 
 			byteTable = new uint64_t[256];
-			uint64_t h = 0x544B2FBaCAAF168;
+			uint64_t h = 0x544B2FBACAAF168L;
 
 			for(int i=0;i<256;++i) {
 				for(int j=0;j<31;++j) {
