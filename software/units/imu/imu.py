@@ -88,8 +88,10 @@ class Comm(threading.Thread):
 			#)
 
 			#x,y,z = self.marg2.transform()
-
-			self.update(x,y,z)
+			x = float(v[0])
+			y = float(v[1])
+			z = float(v[2])
+			self.update(-x-90,-y,z)
 		self.comm.close()
 
 	def kill(self):
