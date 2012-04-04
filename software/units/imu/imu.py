@@ -91,7 +91,7 @@ class Comm(threading.Thread):
 			x = float(v[0])
 			y = float(v[1])
 			z = float(v[2])
-			self.update(-x-90,-y,z)
+			self.update(x,y,z)
 		self.comm.close()
 
 	def kill(self):
@@ -102,7 +102,7 @@ class Comm(threading.Thread):
 
 	def update(self,x,y,z):
 		if self.eng is not None:
-			print "<%s,%s,%s>" % (x,y,z)
+			#print "<%s,%s,%s>" % (x,y,z)
 			self.eng.update(x,y,z)
 
 
