@@ -20,18 +20,19 @@
 * OTHER DEALINGS IN THE SOFTWARE.
 */
 
+#include <string>
+#include <string.h>
+#include <time.h>
+#include <fstream>
 #include "events/timeout.h"
 #include "events/pubsub.h"
 #include "imu.h"
 #include "io/gpio.h"
 #include "util.h"
-#include <string>
-#include <time.h>
 
 #define RATE 0.0012
 
 typedef enum _eSTATE {
-
 	eSETUP,
 	eLAND,
 	eFLY,
@@ -46,73 +47,128 @@ GPIO calib_lamp;
 GPIO comm_lamp;
 GPIO err_lamp;
 IMU imu(RATE,0.001);
+ofstream err_file;
 
+//Variables
+bool CALIB = false;
+bool COMM = false;
+bool FATAL = false;
+bool GROUNDED = true;
 
 void fatal_err() {
 	err_lamp.set_value(1);
+	FATAL = true;
 }
 
 void error_log(void *data) {
-	//TODO: Format a TIMESTAMP
-	cout << ((string *)data)->c_str() << endl;
-	//TODO: Format the message
-	//TODO: Write the message to a log
-}
 
-void io_setup() {
-	//Setup GPIO
-	int status = err_lamp.init("P9_15"); 
-	status |= err_lamp.set_dir("out"); 
-	status |= err_lamp.set_value(0);
-
-	//TODO: Assign GPIO Pins
-	calib_lamp.init("P9_??"); calib_lamp.set_dir("out"); calib_lamp.set_value(0);
-	comm_lamp.init("P9_??"); comm_lamp.set_dir("out"); comm_lamp.set_value(0);
-
-	if(status) {
-		eState = eERR;
-		string msg; msg = "IO ERROR - GPIO Setup Failed.";
-		publish("system/error",(void *)&msg);
-	}
-
-	//Calibrate Sensors
-	if(imu.calibrate()) {
-		eState = eERR;
-		string msg; msg = "IO ERROR - Calibration Failed.";
-		publish("system/error",(void *)&msg);
-	}
-
+	char buf[256];
+	time_t t;
+	t = time(NULL);
+	sprintf(buf,"%s",asctime(localtime(&t)));
+	buf[24] = '\0';
+	err_file << buf << " - " << ((string *)data)->c_str() << endl;
 }
 
 void sys_setup() {
+
+	//Logging
+	err_file.open("error.log",ios::out | ios::app);
+
 	//Subscriptions
 	subscribe("system/error",error_log);
 }
 
+void io_setup() {
+
+	//Setup GPIO
+	if(err_lamp.init("P9_15")) {
+		eState = eERR;
+		string msg; msg = "IO ERROR - GPIO Setup Failed [ERROR LAMP]";
+		publish("system/error",(void *)&msg);
+	}
+	err_lamp.set_dir("out"); 
+	err_lamp.set_value(0);
+
+	//TODO: Assign GPIO Pins
+	if(calib_lamp.init("P9_??")) {
+		eState = eERR;
+		string msg; msg = "IO ERROR - GPIO Setup Failed [CALIB LAMP]";
+		publish("system/error",(void *)&msg);
+	} 
+	calib_lamp.set_dir("out"); 
+	calib_lamp.set_value(0);
+
+	if(comm_lamp.init("P9_??")) {
+		eState = eERR;
+		string msg; msg = "IO ERROR - GPIO Setup Failed [COMM LAMP]";
+		publish("system/error",(void *)&msg);
+	}
+	comm_lamp.set_dir("out"); 
+	comm_lamp.set_value(0);
+
+	//Calibrate Sensors
+	if(imu.calibrate()) {
+		eState = eERR;
+		string msg; msg = "IO ERROR - IMU Calibration Failed";
+		publish("system/error",(void *)&msg);
+		fatal_error();
+	}
+
+	//GET MBED IS READY
+}
+
 void comm_setup() {
+
+	//IF NO WORK
+	//fatal_error();
 }
 
 int main() {
 
 	while(1) {
-
 		switch(eState) {
-
 			case eSETUP:
 				sys_setup();
 				io_setup();
+				if(imu.isCalibrated()) {
+					CALIB = true;
+					calib_lamp.set_value(1);
+				}
 				comm_setup();
+				comm_lamp.set_value(1);
+
+				ePrevState = eSETUP;
+				if(!FATAL) {
+					eState = eLAND;
+				} else {
+					eState = eERR;
+				}
 				break;
 			case eLAND:
 				break;
 			case eFLY:
 				break;
 			case eERR:
+				switch(ePrevState) {
+					case eSETUP:
+						//STAY HERE UNTIL RESET?
+						break;
+					case eLAND:
+						//STAY HERE UNTIL RESET?
+						break;
+					case eFLY:
+						//SAFE LAND AND WAIT?
+						break;
+					default:
+						//WAIT?
+						break;
+				}
 				break;
 			default:
 				eState = eERR;
 				ePrevState = eERR;
-				string msg; msg = "SYSTEM ERROR - Unknown State Reached.";
+				string msg; msg = "SYSTEM ERROR - Unknown State Reached";
 				publish("system/error",(void *)&msg);
 				break;
 		}
