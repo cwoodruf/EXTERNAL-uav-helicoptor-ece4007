@@ -44,10 +44,14 @@ using namespace std;
 
 #define MBED_ID			0x10
 
+
+#define MBED_STATUS_READY				0x01
+#define MBED_STATUS_PID_INIT_ERROR		0x02
+#define MBED_STATUS_PID_REGULATE_ERROR	0x04
+
 class MBED : public I2C {
 
 	private:
-		unsigned char range;
 
 	public:
 		MBED();
