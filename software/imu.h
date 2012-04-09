@@ -80,6 +80,8 @@ class IMU {
 
 
 		int calibrate(int samples=1000) {
+			accel.set_range(0,false);
+		    accel.set_measurement_mode();
 
 			short int ax,ay,az;
 			short int gx,gy,gz;
