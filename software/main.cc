@@ -20,6 +20,7 @@
 * OTHER DEALINGS IN THE SOFTWARE.
 */
 
+#include <iostream>
 #include <string>
 #include <string.h>
 #include <time.h>
@@ -27,7 +28,10 @@
 #include "imu.h"
 #include "sensors/mbed.h"
 #include "io/gpio.h"
+#include "events/timeout.h"
 #include "util.h"
+
+using namespace std;
 
 #define RATE 0.0012
 
@@ -48,10 +52,12 @@ GPIO calib_lamp;
 GPIO comm_lamp;
 GPIO err_lamp;
 IMU imu(RATE,0.001);
+MBED mbed;
 ofstream err_file;
 
 //Variables
 bool MBED_OK = false;
+bool MBED_TO = false;
 bool CALIB = false;
 bool COMM = false;
 bool FATAL = false;
@@ -70,6 +76,10 @@ void error_log(const char *data) {
 	err_file << buf << " - " << data << endl;
 }
 
+void mbed_to() {
+	MBED_TO = true;
+}
+
 void sys_setup() {
 
 	//Logging
@@ -80,44 +90,51 @@ void io_setup() {
 
 	//Setup GPIO
 	if(err_lamp.init("P9_15")) {
-		eState = eERR;
 		error_log("IO ERROR - GPIO Setup Failed [ERROR LAMP]");
+		fatal_err();
 	}
 	err_lamp.set_dir("out"); 
 	err_lamp.set_value(0);
 
 	if(calib_lamp.init("P9_23")) {
-		eState = eERR;
 		error_log("IO ERROR - GPIO Setup Failed [CALIB LAMP]");
+		fatal_err();
 	} 
 	calib_lamp.set_dir("out"); 
 	calib_lamp.set_value(0);
 
 	if(comm_lamp.init("P9_25")) {
-		eState = eERR;
 		error_log("IO ERROR - GPIO Setup Failed [COMM LAMP]");
+		fatal_err();
 	}
 	comm_lamp.set_dir("out"); 
 	comm_lamp.set_value(0);
 
 	//Calibrate Sensors
 	if(imu.calibrate()) {
-		eState = eERR;
 		error_log("IO ERROR - IMU Calibration Failed");
 		fatal_err();
 	}
 
-	//TODO: SETUP MBED STATUS TIMEOUT
-	//TODO: LOOP GETTING MBED STATUS UNTIL OK OR TIMEOUT
+	unsigned char status = 0;
+	register_timeout(mbed_to,5.0);
+	while(!MBED_OK && !MBED_TO) {
+		mbed.get_status(status);
+		if(status == MBED_STATUS_READY) {
+			MBED_OK = true;
+		}
+	}
+
+	if(!MBED_OK) {
+		error_log("IO ERROR - MBED Timeout on Setup");
+		fatal_err();
+	}
 }
 
 void comm_setup() {
-
-	//IF NO WORK
-	//fatal_error();
+	error_log("COMM ERROR - Connection Failed");
+	fatal_error();
 }
-
-
 
 int main() {
 	while(1) {
@@ -128,15 +145,19 @@ int main() {
 				if(imu.isCalibrated() && MBED_OK) { 
 					CALIB = true;
 					calib_lamp.set_value(1);
+
+					comm_setup();
+					if(COMM) {
+						comm_lamp.set_value(1);
+					}
 				}
-				comm_setup();
-				comm_lamp.set_value(1);
 
 				ePrevState = eSETUP;
 				if(!FATAL) {
 					eState = eGROUND;
 				} else {
 					eState = eERR;
+					error_log("SYSTEM ERROR - ERROR State Has Been Reached");
 				}
 				break;
 			case eGROUND:
