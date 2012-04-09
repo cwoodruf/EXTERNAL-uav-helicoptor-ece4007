@@ -156,3 +156,5 @@ int MBED::set_motor_4(short int rpm) {
 int MBED::get_sonar(unsigned char &cm) {
 	return read_byte(MBED_SONAR,cm);
 }
+
+#endif
