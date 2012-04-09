@@ -1,0 +1,6 @@
+CC=gcc 
+CFLAGS=-lssl -lcrypto -lcurses
+main: menu.o 
+
+clean:
+	rm -f  menu.o 

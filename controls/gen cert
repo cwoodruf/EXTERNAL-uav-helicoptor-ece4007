@@ -1,0 +1,16 @@
+- AUTHORITY Certificate:
+ openssl genrsa -des3 -out ca.key 2056
+ openssl req -new -x509 -key ca.key -out ca.crt
+
+- SERVER Certificate
+ openssl genrsa -des3 -out server.key 2056
+ openssl req -new -key server.key -out server.csr
+ openssl x509 -req -in server.csr -out server.crt -sha1 -CA ca.crt -CAkey ca.key -CAcreateserial 
+
+- CLIENT Certificate
+ openssl genrsa -des3 -out client.key 2056
+ openssl req -new -key client.key -out client.csr
+ openssl x509 -req -in client.csr -out client.crt -sha1 -CA ca.crt -CAkey ca.key -CAcreateserial
+
+
+ hellacat
