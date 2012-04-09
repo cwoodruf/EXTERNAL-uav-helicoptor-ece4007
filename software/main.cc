@@ -25,7 +25,7 @@
 #include <time.h>
 #include <fstream>
 #include "imu.h"
-#include "mbed/mbed.h"
+#include "sensors/mbed.h"
 #include "io/gpio.h"
 #include "util.h"
 
