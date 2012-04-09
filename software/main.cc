@@ -24,9 +24,8 @@
 #include <string.h>
 #include <time.h>
 #include <fstream>
-#include "events/timeout.h"
-#include "events/pubsub.h"
 #include "imu.h"
+#include "mbed/mbed.h"
 #include "io/gpio.h"
 #include "util.h"
 
@@ -34,8 +33,10 @@
 
 typedef enum _eSTATE {
 	eSETUP,
-	eLAND,
+	eGROUND,
+	eTAKEOFF,
 	eFLY,
+	eLAND,
 	eERR
 }eSTATE;
 
@@ -50,33 +51,29 @@ IMU imu(RATE,0.001);
 ofstream err_file;
 
 //Variables
+bool MBED_OK = false;
 bool CALIB = false;
 bool COMM = false;
 bool FATAL = false;
-bool GROUNDED = true;
 
 void fatal_err() {
 	err_lamp.set_value(1);
 	FATAL = true;
 }
 
-void error_log(void *data) {
-
+void error_log(const char *data) {
 	char buf[256];
 	time_t t;
 	t = time(NULL);
 	sprintf(buf,"%s",asctime(localtime(&t)));
 	buf[24] = '\0';
-	err_file << buf << " - " << ((string *)data)->c_str() << endl;
+	err_file << buf << " - " << data << endl;
 }
 
 void sys_setup() {
 
 	//Logging
 	err_file.open("error.log",ios::out | ios::app);
-
-	//Subscriptions
-	subscribe("system/error",error_log);
 }
 
 void io_setup() {
@@ -84,25 +81,21 @@ void io_setup() {
 	//Setup GPIO
 	if(err_lamp.init("P9_15")) {
 		eState = eERR;
-		string msg; msg = "IO ERROR - GPIO Setup Failed [ERROR LAMP]";
-		publish("system/error",(void *)&msg);
+		error_log("IO ERROR - GPIO Setup Failed [ERROR LAMP]");
 	}
 	err_lamp.set_dir("out"); 
 	err_lamp.set_value(0);
 
-	//TODO: Assign GPIO Pins
-	if(calib_lamp.init("P9_??")) {
+	if(calib_lamp.init("P9_23")) {
 		eState = eERR;
-		string msg; msg = "IO ERROR - GPIO Setup Failed [CALIB LAMP]";
-		publish("system/error",(void *)&msg);
+		error_log("IO ERROR - GPIO Setup Failed [CALIB LAMP]");
 	} 
 	calib_lamp.set_dir("out"); 
 	calib_lamp.set_value(0);
 
-	if(comm_lamp.init("P9_??")) {
+	if(comm_lamp.init("P9_25")) {
 		eState = eERR;
-		string msg; msg = "IO ERROR - GPIO Setup Failed [COMM LAMP]";
-		publish("system/error",(void *)&msg);
+		error_log("IO ERROR - GPIO Setup Failed [COMM LAMP]");
 	}
 	comm_lamp.set_dir("out"); 
 	comm_lamp.set_value(0);
@@ -110,12 +103,12 @@ void io_setup() {
 	//Calibrate Sensors
 	if(imu.calibrate()) {
 		eState = eERR;
-		string msg; msg = "IO ERROR - IMU Calibration Failed";
-		publish("system/error",(void *)&msg);
-		fatal_error();
+		error_log("IO ERROR - IMU Calibration Failed");
+		fatal_err();
 	}
 
-	//GET MBED IS READY
+	//TODO: SETUP MBED STATUS TIMEOUT
+	//TODO: LOOP GETTING MBED STATUS UNTIL OK OR TIMEOUT
 }
 
 void comm_setup() {
@@ -124,14 +117,15 @@ void comm_setup() {
 	//fatal_error();
 }
 
-int main() {
 
+
+int main() {
 	while(1) {
 		switch(eState) {
 			case eSETUP:
 				sys_setup();
 				io_setup();
-				if(imu.isCalibrated()) {
+				if(imu.isCalibrated() && MBED_OK) { 
 					CALIB = true;
 					calib_lamp.set_value(1);
 				}
@@ -140,36 +134,52 @@ int main() {
 
 				ePrevState = eSETUP;
 				if(!FATAL) {
-					eState = eLAND;
+					eState = eGROUND;
 				} else {
 					eState = eERR;
 				}
 				break;
-			case eLAND:
+			case eGROUND:
+				//Wait for takeoff command
+				break;
+			case eTAKEOFF:
+				//Take off to a reasonable height and hover
 				break;
 			case eFLY:
+				//Wait for user command and react
+				break;
+			case eLAND:
+				//Hover down slowly and land
 				break;
 			case eERR:
 				switch(ePrevState) {
 					case eSETUP:
-						//STAY HERE UNTIL RESET?
+						//Just sit here and make sure io is off
 						break;
-					case eLAND:
-						//STAY HERE UNTIL RESET?
+					case eGROUND:
+						//Just sit here and make sure io is off
+						break;
+					case eTAKEOFF:
+						//SAFE LAND AND WAIT?
 						break;
 					case eFLY:
 						//SAFE LAND AND WAIT?
 						break;
+					case eLAND:
+						//STAY HERE UNTIL RESET?
+						break;
+					case eERR:
+						//Just sit here and make sure io is off
+						break;
 					default:
-						//WAIT?
+						//Just sit here and make sure io is off
 						break;
 				}
 				break;
 			default:
 				eState = eERR;
 				ePrevState = eERR;
-				string msg; msg = "SYSTEM ERROR - Unknown State Reached";
-				publish("system/error",(void *)&msg);
+				error_log("SYSTEM ERROR - Unknown State Reached");
 				break;
 		}
 
