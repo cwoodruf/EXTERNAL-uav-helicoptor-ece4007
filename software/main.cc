@@ -180,15 +180,12 @@ int main() {
 				break;
 			case eTAKEOFF:
 				//Take off to a reasonable height and hover
-				imu.update(orient);
 				break;
 			case eFLY:
 				//Hover while waiting for user command and react
-				imu.update(orient);
 				break;
 			case eLAND:
 				//Hover down slowly and land
-				imu.update(orient);
 				break;
 			case eERR:
 				switch(ePrevState) {
