@@ -115,4 +115,3 @@ class AHRS {
 };
 
 #endif
-
