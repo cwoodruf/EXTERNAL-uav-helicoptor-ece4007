@@ -53,17 +53,18 @@ GPIO calib_lamp;
 GPIO comm_lamp;
 GPIO err_lamp;
 IMU imu(RATE,0.001);
+Vector3 orient;
 MBED mbed;
 Altimeter alt;
 ofstream err_file;
 
 //Variables
 bool MBED_OK = false;
-bool MBED_TO = false;
 bool CALIB = false;
 bool COMM = false;
 bool FATAL = false;
 
+// Sets the FATAL flag and turns on the error lamp
 void fatal_err() {
 	err_lamp.set_value(1);
 	FATAL = true;
@@ -81,9 +82,10 @@ void error_log(const char *data) {
 	err_file << buf << " - " << data << endl;
 }
 
-// Called on a timeout, sets the MBED_TO flag
-void mbed_to() {
-	MBED_TO = true;
+// Called on a timeout, updates orientation
+void imu_loop() {
+	imu.update(orient);
+	register_timeout(imu_loop,RATE);
 }
 
 // Setup System
@@ -128,12 +130,13 @@ bool io_setup() {
 		fatal_err();
 	}
 
+	T_TONDelay delay = {false,false,5.0,0};
 	unsigned char status = 0;
-	register_timeout(mbed_to,5.0);
-	while(!MBED_OK && !MBED_TO) {
+	while(!ton_delay(delay,true)) {
 		mbed.get_status(status);
 		if(status == MBED_STATUS_READY) {
 			MBED_OK = true;
+			break;
 		}
 	}
 
@@ -153,7 +156,10 @@ bool comm_setup() {
 	return !FATAL;
 }
 
+
+// Main Program - Runs Through the State Machine
 int main() {
+
 	while(1) {
 		switch(eState) {
 			case eSETUP:
@@ -163,6 +169,7 @@ int main() {
 				if(sys_setup() && io_setup() && comm_setup()) { 
 					calib_lamp.set_value(1);
 					comm_lamp.set_value(1);
+					register_timeout(imu_loop,RATE);
 					eState = eGROUND;
 				} else {
 					eState = eERR;
@@ -173,12 +180,15 @@ int main() {
 				break;
 			case eTAKEOFF:
 				//Take off to a reasonable height and hover
+				imu.update(orient);
 				break;
 			case eFLY:
 				//Hover while waiting for user command and react
+				imu.update(orient);
 				break;
 			case eLAND:
 				//Hover down slowly and land
+				imu.update(orient);
 				break;
 			case eERR:
 				switch(ePrevState) {
