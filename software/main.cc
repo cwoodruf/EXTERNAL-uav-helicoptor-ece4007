@@ -31,24 +31,11 @@
 #include "io/gpio.h"
 #include "events/timeout.h"
 #include "util.h"
+#include "main.h"
 
 using namespace std;
 
-#define RATE 0.0012
-
-typedef enum _eSTATE {
-	eSETUP,
-	eGROUND,
-	eTAKEOFF,
-	eFLY,
-	eLAND,
-	eERR
-}eSTATE;
-
-eSTATE eState = eSETUP;
-eSTATE ePrevState = eSETUP;
-
-//Objects
+//Global Objects
 GPIO calib_lamp;
 GPIO comm_lamp;
 GPIO err_lamp;
@@ -58,113 +45,18 @@ MBED mbed;
 Altimeter alt;
 ofstream err_file;
 
-//Variables
-bool MBED_OK = false;
-bool CALIB = false;
-bool COMM = false;
+//Global Variables
 bool FATAL = false;
-
-// Sets the FATAL flag and turns on the error lamp
-void fatal_err() {
-	err_lamp.set_value(1);
-	FATAL = true;
-}
-
-// Writes a message out to the error log with a timestamp
-// DayW Month DayN Time Year - MSG
-// Tue Apr 10 08:19:55 2012 - SOME ERROR - Error Details
-void error_log(const char *data) {
-	char buf[256];
-	time_t t;
-	t = time(NULL);
-	sprintf(buf,"%s",asctime(localtime(&t)));
-	buf[24] = '\0';
-	err_file << buf << " - " << data << endl;
-}
-
-// Called on a timeout, updates orientation
-void imu_loop() {
-	imu.update(orient);
-	register_timeout(imu_loop,RATE);
-}
-
-// Setup System
-// Returns true for success, false for failed
-bool sys_setup() {
-
-	//Logging
-	err_file.open("error.log",ios::out | ios::app);
-
-	return !FATAL;
-}
-
-// Setup IO
-// Returns true for success, false for failed
-bool io_setup() {
-
-	//Setup GPIO
-	if(err_lamp.init("P9_15")) {
-		error_log("IO ERROR - GPIO Setup Failed [ERROR LAMP]");
-		fatal_err();
-	}
-	err_lamp.set_dir("out"); 
-	err_lamp.set_value(0);
-
-	if(calib_lamp.init("P9_23")) {
-		error_log("IO ERROR - GPIO Setup Failed [CALIB LAMP]");
-		fatal_err();
-	} 
-	calib_lamp.set_dir("out"); 
-	calib_lamp.set_value(0);
-
-	if(comm_lamp.init("P9_25")) {
-		error_log("IO ERROR - GPIO Setup Failed [COMM LAMP]");
-		fatal_err();
-	}
-	comm_lamp.set_dir("out"); 
-	comm_lamp.set_value(0);
-
-	//Calibrate Sensors
-	if(imu.calibrate()) {
-		error_log("IO ERROR - IMU Calibration Failed");
-		fatal_err();
-	}
-
-	T_TONDelay delay = {false,false,5.0,0};
-	unsigned char status = 0;
-	while(!ton_delay(delay,true)) {
-		mbed.get_status(status);
-		if(status == MBED_STATUS_READY) {
-			MBED_OK = true;
-			break;
-		}
-	}
-
-	if(!MBED_OK) {
-		error_log("IO ERROR - MBED Timeout on Setup");
-		fatal_err();
-	}
-
-	return !FATAL;
-}
-
-// Setup Communications
-// Returns true for success, false for failed
-bool comm_setup() {
-	error_log("COMM ERROR - Connection Failed");
-	fatal_err();
-	return !FATAL;
-}
+eSTATE eState = eSETUP;
+eSTATE ePrevState = eSETUP;
+eCONTROLLER eController = eLOCAL;
 
 
 // Main Program - Runs Through the State Machine
 int main() {
-
 	while(1) {
 		switch(eState) {
 			case eSETUP:
-				ePrevState = eSETUP;	
-
 				//Run setup routines, proceed if all pass
 				if(sys_setup() && io_setup() && comm_setup()) { 
 					calib_lamp.set_value(1);
@@ -174,9 +66,29 @@ int main() {
 				} else {
 					eState = eERR;
 				}
+				ePrevState = eSETUP;	
 				break;
 			case eGROUND:
 				//Wait for takeoff command
+				switch(eController) {
+					case eLOCAL:
+						char cmd;
+						cin >> cmd;
+						if(cmd == 't') {
+							cout << "TAKEOFF BEGIN" << endl;
+							eState = eTAKEOFF;
+							ePrevState = eGROUND;
+						}
+						break;
+					case eREMOTE:
+						break;
+					default:
+						eState = eERR;
+						ePrevState = eERR;
+						error_log("SYSTEM ERROR - Unknown Controller Mode");
+						fatal_err();
+						break;
+				}
 				break;
 			case eTAKEOFF:
 				//Take off to a reasonable height and hover
@@ -223,4 +135,106 @@ int main() {
 	}
 
 	return 0;
+}
+
+
+// Local Functions
+
+// Sets the FATAL flag and turns on the error lamp
+void fatal_err() {
+	err_lamp.set_value(1);
+	FATAL = true;
+}
+
+// Writes a message out to the error log with a timestamp
+// DayW Month DayN Time Year - MSG
+// Tue Apr 10 08:19:55 2012 - SOME ERROR - Error Details
+void error_log(const char *data) {
+	char buf[256];
+	time_t t;
+	t = time(NULL);
+	sprintf(buf,"%s",asctime(localtime(&t)));
+	buf[24] = '\0';
+	err_file << buf << " - " << data << endl;
+}
+
+// Called on a timeout, updates orientation
+void imu_loop() {
+	imu.update(orient);
+	register_timeout(imu_loop,RATE);
+}
+
+// Setup System
+// Returns true for success, false for failed
+bool sys_setup() {
+	err_file.open("error.log",ios::out | ios::app);
+	return !FATAL;
+}
+
+// Setup IO
+// Returns true for success, false for failed
+bool io_setup() {
+
+	//Setup GPIO
+	if(err_lamp.init("P9_15")) {
+		error_log("IO ERROR - GPIO Setup Failed [ERROR LAMP]");
+		fatal_err();
+	}
+	err_lamp.set_dir("out"); 
+	err_lamp.set_value(0);
+
+	if(calib_lamp.init("P9_23")) {
+		error_log("IO ERROR - GPIO Setup Failed [CALIB LAMP]");
+		fatal_err();
+	} 
+	calib_lamp.set_dir("out"); 
+	calib_lamp.set_value(0);
+
+	if(comm_lamp.init("P9_25")) {
+		error_log("IO ERROR - GPIO Setup Failed [COMM LAMP]");
+		fatal_err();
+	}
+	comm_lamp.set_dir("out"); 
+	comm_lamp.set_value(0);
+
+	//Calibrate Sensors
+	if(imu.calibrate()) {
+		error_log("IO ERROR - IMU Calibration Failed");
+		fatal_err();
+	}
+
+	T_TONDelay delay = {false,false,5.0,0};
+	unsigned char status = 0;
+	while(!ton_delay(delay,true)) {
+		mbed.get_status(status);
+		if(status == MBED_STATUS_READY) {
+			break;
+		}
+	}
+
+	if(status != MBED_STATUS_READY) {
+		error_log("IO ERROR - MBED Timeout on Setup");
+		fatal_err();
+	}
+
+	return !FATAL;
+}
+
+// Setup Communications
+// Returns true for success, false for failed
+bool comm_setup() {
+	switch(eController) {
+		case eLOCAL:
+			break;
+		case eREMOTE:
+			error_log("COMM ERROR - Connection Failed");
+			fatal_err();
+			break;
+		default:
+			error_log("SYSTEM ERROR - Unknown Controller Mode");
+			fatal_err();
+			break;
+	}
+
+	return !FATAL;
 }

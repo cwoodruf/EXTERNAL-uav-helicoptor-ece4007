@@ -185,6 +185,7 @@ class IMU {
 				cal_g[i] = rhs.cal_g[i];
 				cal_m[i] = rhs.cal_m[i];
 			}
+			return *this;
 		}
 };
 
