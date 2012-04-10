@@ -27,6 +27,7 @@
 #include <fstream>
 #include "imu.h"
 #include "sensors/mbed.h"
+#include "sensors/altimeter.h"
 #include "io/gpio.h"
 #include "events/timeout.h"
 #include "util.h"
@@ -53,6 +54,7 @@ GPIO comm_lamp;
 GPIO err_lamp;
 IMU imu(RATE,0.001);
 MBED mbed;
+Altimeter alt;
 ofstream err_file;
 
 //Variables
@@ -67,6 +69,9 @@ void fatal_err() {
 	FATAL = true;
 }
 
+// Writes a message out to the error log with a timestamp
+// DayW Month DayN Time Year - MSG
+// Tue Apr 10 08:19:55 2012 - SOME ERROR - Error Details
 void error_log(const char *data) {
 	char buf[256];
 	time_t t;
@@ -76,17 +81,24 @@ void error_log(const char *data) {
 	err_file << buf << " - " << data << endl;
 }
 
+// Called on a timeout, sets the MBED_TO flag
 void mbed_to() {
 	MBED_TO = true;
 }
 
-void sys_setup() {
+// Setup System
+// Returns true for success, false for failed
+bool sys_setup() {
 
 	//Logging
 	err_file.open("error.log",ios::out | ios::app);
+
+	return !FATAL;
 }
 
-void io_setup() {
+// Setup IO
+// Returns true for success, false for failed
+bool io_setup() {
 
 	//Setup GPIO
 	if(err_lamp.init("P9_15")) {
@@ -129,35 +141,31 @@ void io_setup() {
 		error_log("IO ERROR - MBED Timeout on Setup");
 		fatal_err();
 	}
+
+	return !FATAL;
 }
 
-void comm_setup() {
+// Setup Communications
+// Returns true for success, false for failed
+bool comm_setup() {
 	error_log("COMM ERROR - Connection Failed");
-	fatal_error();
+	fatal_err();
+	return !FATAL;
 }
 
 int main() {
 	while(1) {
 		switch(eState) {
 			case eSETUP:
-				sys_setup();
-				io_setup();
-				if(imu.isCalibrated() && MBED_OK) { 
-					CALIB = true;
+				ePrevState = eSETUP;	
+
+				//Run setup routines, proceed if all pass
+				if(sys_setup() && io_setup() && comm_setup()) { 
 					calib_lamp.set_value(1);
-
-					comm_setup();
-					if(COMM) {
-						comm_lamp.set_value(1);
-					}
-				}
-
-				ePrevState = eSETUP;
-				if(!FATAL) {
+					comm_lamp.set_value(1);
 					eState = eGROUND;
 				} else {
 					eState = eERR;
-					error_log("SYSTEM ERROR - ERROR State Has Been Reached");
 				}
 				break;
 			case eGROUND:
@@ -167,7 +175,7 @@ int main() {
 				//Take off to a reasonable height and hover
 				break;
 			case eFLY:
-				//Wait for user command and react
+				//Hover while waiting for user command and react
 				break;
 			case eLAND:
 				//Hover down slowly and land
@@ -201,6 +209,7 @@ int main() {
 				eState = eERR;
 				ePrevState = eERR;
 				error_log("SYSTEM ERROR - Unknown State Reached");
+				fatal_err();
 				break;
 		}
 
