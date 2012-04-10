@@ -73,7 +73,7 @@ int Altimeter::get_data_raw(short int &data) {
 	int status = read_byte(ALTIMETER_DATA_MSB,d);
 	data = ((short int)d) << 8;
 	status |= read_byte(ALTIMETER_DATA_LSB,d);
-	data |= d
+	data |= d;
 	return status;
 }
 
