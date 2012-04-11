@@ -176,21 +176,21 @@ bool sys_setup() {
 bool io_setup() {
 
 	//Setup GPIO
-	if(err_lamp.init("P9_15")) {
+	if(err_lamp.init("P9_15") != 1) {
 		error_log("IO ERROR - GPIO Setup Failed [ERROR LAMP]");
 		fatal_err();
 	}
 	err_lamp.set_dir("out"); 
 	err_lamp.set_value(0);
 
-	if(calib_lamp.init("P9_23")) {
+	if(calib_lamp.init("P9_23") != 1) {
 		error_log("IO ERROR - GPIO Setup Failed [CALIB LAMP]");
 		fatal_err();
 	} 
 	calib_lamp.set_dir("out"); 
 	calib_lamp.set_value(0);
 
-	if(comm_lamp.init("P9_25")) {
+	if(comm_lamp.init("P9_25") != 1) {
 		error_log("IO ERROR - GPIO Setup Failed [COMM LAMP]");
 		fatal_err();
 	}
