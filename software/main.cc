@@ -55,6 +55,7 @@ short int m1,m2,m3,m4;
 
 // Main Program - Runs Through the State Machine
 int main() {
+	T_TONDelay delay = {false,false,0.05,0};
 	while(1) {
 		switch(eState) {
 			case eSETUP:
@@ -67,7 +68,7 @@ int main() {
 				} else {
 					eState = eERR;
 				}
-				ePrevState = eSETUP;	
+				ePrevState = eSETUP;
 				break;
 			case eGROUND:
 				//Wait for takeoff command
@@ -77,15 +78,14 @@ int main() {
 						cin >> cmd;
 						if(cmd == 't') {
 							cout << "TAKEOFF BEGIN" << endl;
+							ePrevState = eState;
 							eState = eTAKEOFF;
-							ePrevState = eGROUND;
 						}
 						break;
 					case eREMOTE:
 						break;
 					default:
-						eState = eERR;
-						ePrevState = eERR;
+						eState = ePrevState = eERR;
 						error_log("SYSTEM ERROR - Unknown Controller Mode");
 						fatal_err();
 						break;
@@ -93,9 +93,12 @@ int main() {
 				break;
 			case eTAKEOFF:
 				//Take off to a reasonable height and hover
-				if(takeoff()) {
-					eState = eFLY;
-					ePrevState = eTAKEOFF;	
+				if(ton_delay(delay,true)) {
+					if(takeoff()) {
+						ePrevState = eState;
+						eState = eFLY;
+					}
+					ton_delay(delay,false);
 				}
 				break;
 			case eFLY:
@@ -130,15 +133,12 @@ int main() {
 				}
 				break;
 			default:
-				eState = eERR;
-				ePrevState = eERR;
+				eState = ePrevState = eERR;
 				error_log("SYSTEM ERROR - Unknown State Reached");
 				fatal_err();
 				break;
 		}
-
 	}
-
 	return 0;
 }
 
@@ -244,6 +244,7 @@ bool comm_setup() {
 	return !FATAL;
 }
 
+//Updates global variables with the motor speeds
 void get_motors() {
 	int nok = mbed.get_motor_1(m1); nok |= mbed.get_motor_2(m2);
 	nok |= mbed.get_motor_3(m3); nok |= mbed.get_motor_4(m4);
@@ -256,6 +257,7 @@ void get_motors() {
 	}
 }
 
+//Sets the motor speeds with the global variables
 void set_motors() {
 	int nok = mbed.set_motor_1(m1); nok |= mbed.set_motor_2(m2);
 	nok |= mbed.set_motor_3(m3); nok |= mbed.set_motor_4(m4);

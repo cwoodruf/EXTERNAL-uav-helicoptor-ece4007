@@ -69,7 +69,7 @@ class MBED : public I2C {
 		int set_motor_3(short int rpm);
 		int get_motor_4(short int &rpm);
 		int set_motor_4(short int rpm);
-		int get_sonar(unsigned char &cm);
+		int get_sonar(unsigned char &in);
 };
 
 MBED::MBED() : I2C(3,MBED_ID) {
@@ -153,8 +153,8 @@ int MBED::set_motor_4(short int rpm) {
 	return status | write_byte(MBED_MOTOR_4_LB,dlb);
 }
 
-int MBED::get_sonar(unsigned char &cm) {
-	return read_byte(MBED_SONAR,cm);
+int MBED::get_sonar(unsigned char &in) {
+	return read_byte(MBED_SONAR,in);
 }
 
 #endif
