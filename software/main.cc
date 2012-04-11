@@ -50,6 +50,7 @@ bool FATAL = false;
 eSTATE eState = eSETUP;
 eSTATE ePrevState = eSETUP;
 eCONTROLLER eController = eLOCAL;
+short int m1,m2,m3,m4;
 
 
 // Main Program - Runs Through the State Machine
@@ -92,6 +93,10 @@ int main() {
 				break;
 			case eTAKEOFF:
 				//Take off to a reasonable height and hover
+				if(takeoff()) {
+					eState = eFLY;
+					ePrevState = eTAKEOFF;	
+				}
 				break;
 			case eFLY:
 				//Hover while waiting for user command and react
@@ -237,4 +242,119 @@ bool comm_setup() {
 	}
 
 	return !FATAL;
+}
+
+void get_motors() {
+	int nok = mbed.get_motor_1(m1); nok |= mbed.get_motor_2(m2);
+	nok |= mbed.get_motor_3(m3); nok |= mbed.get_motor_4(m4);
+
+	if(nok) {
+		fatal_err();
+		error_log("IO ERROR - Lost Communications [MBED]");
+		ePrevState = eState;
+		eState = eERR;
+	}
+}
+
+void set_motors() {
+	int nok = mbed.set_motor_1(m1); nok |= mbed.set_motor_2(m2);
+	nok |= mbed.set_motor_3(m3); nok |= mbed.set_motor_4(m4);
+
+	if(nok) {
+		fatal_err();
+		error_log("IO ERROR - Lost Communications [MBED]");
+		ePrevState = eState;
+		eState = eERR;
+	}
+}
+
+//Automates the takeoff proceedure
+bool takeoff() {
+	unsigned char inch;
+	if(mbed.get_sonar(inch)) {
+		fatal_err();
+		error_log("IO ERROR - Lost Communications [MBED]");
+		ePrevState = eState;
+		eState = eERR;
+	}
+
+	if(inch > TAKEOFF_ALTITUDE) {
+		return true;		
+	}
+
+	get_motors();
+		flight_altitude(1);
+		flight_stabilize(Vector3(0,0,0));
+	set_motors();
+
+	return false;
+}
+
+//Run the altitude control system
+// The dir is 1 for gain alt, -1 for loose alt, and 0 is maintain alt
+// The factor is the percent update rate (0-100)
+void flight_altitude(int dir, int factor) {
+	if(dir == 0 || dir > 1 || dir < -1) return;
+
+	int dif = 100+dir*factor;
+	m1 = (short int)((long int)m1*dif/100);
+	m2 = (short int)((long int)m2*dif/100);
+	m3 = (short int)((long int)m3*dif/100);
+	m4 = (short int)((long int)m4*dif/100);
+}
+
+// Run the stabilization control system
+// The desired vector is what orientation we want to be at
+// The factor is the percent update rate (0-100)
+void flight_stabilize(Vector3 desired, int factor) {
+	/* We want maintain some pitch and some yaw
+	*
+	*  (1)    (2)
+	*    \    /          +x ^
+	*     ----              |
+	*     |  |       +y <---O +z
+	*     ----
+	*    /    \
+	*  (3)    (4)
+	*
+	*  Rotation about x-axis is roll
+	*  Rotation about y-axis is pitch
+	*  Rotation about z-axis is yaw
+	*
+	*  If x is < 0, inc motors 2 & 4, dec motors 1 & 3
+	*  If x is > 0, inc motors 1 & 3, dec motors 2 & 4
+	*  If y is < 0, inc motors 3 & 4, dec motors 1 & 2
+	*  If y is > 0, inc motors 1 & 2, dec motors 3 & 4
+	*  We are going to ignore z for now...
+	*/  
+	
+	// Find our Orientation Error
+	Vector3 error = orient - desired;
+
+	// Predict motor speed changes
+	int inc = 100+factor;
+	int dec = 100-factor;
+	if(error[0] < 0) {
+		m2 = (short int)((long int)m2*inc/100);
+		m4 = (short int)((long int)m4*inc/100);
+		m1 = (short int)((long int)m2*dec/100);
+		m3 = (short int)((long int)m2*dec/100);
+	} else if(error[0] > 0) {
+		m1 = (short int)((long int)m1*inc/100);
+		m3 = (short int)((long int)m3*inc/100);
+		m2 = (short int)((long int)m2*dec/100);
+		m4 = (short int)((long int)m4*dec/100);
+	}
+
+	if(error[1] < 0) {
+		m3 = (short int)((long int)m3*inc/100);
+		m4 = (short int)((long int)m4*inc/100);
+		m1 = (short int)((long int)m1*dec/100);
+		m2 = (short int)((long int)m2*dec/100);
+	} else if(error[1] > 0) {
+		m1 = (short int)((long int)m1*inc/100);
+		m2 = (short int)((long int)m2*inc/100);
+		m3 = (short int)((long int)m3*dec/100);
+		m4 = (short int)((long int)m4*dec/100);
+	}
 }
