@@ -30,7 +30,7 @@ bool comm_setup();
 void get_motors();
 void set_motors();
 bool takeoff();
-void flight_altitude(int dir, int factor=1);
-void flight_stabilize(Vector3 desired, int factor=1);
+bool flight_altitude(unsigned short int desired);
+void flight_stabilize(Vector3 desired);
 
 #endif

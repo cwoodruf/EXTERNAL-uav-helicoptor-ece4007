@@ -30,6 +30,7 @@
 #include "sensors/altimeter.h"
 #include "io/gpio.h"
 #include "events/timeout.h"
+#include "controls/pid.h"
 #include "util.h"
 #include "main.h"
 
@@ -43,6 +44,9 @@ IMU imu(RATE,0.001);
 Vector3 orient;
 MBED mbed;
 Altimeter alt;
+PID alt_regulator;
+PID x_regulator;
+PID y_regulator;
 ofstream err_file;
 
 //Global Variables
@@ -182,21 +186,21 @@ bool io_setup() {
 
 	//Setup GPIO
 	if(err_lamp.init("P9_15") != 1) {
-		error_log("IO ERROR - GPIO Setup Failed [ERROR LAMP]");
+		error_log("IO ERROR - [ERROR LAMP] GPIO Setup Failed");
 		fatal_err();
 	}
 	err_lamp.set_dir("out"); 
 	err_lamp.set_value(0);
 
 	if(calib_lamp.init("P9_23") != 1) {
-		error_log("IO ERROR - GPIO Setup Failed [CALIB LAMP]");
+		error_log("IO ERROR - [CALIB LAMP] GPIO Setup Failed");
 		fatal_err();
 	} 
 	calib_lamp.set_dir("out"); 
 	calib_lamp.set_value(0);
 
 	if(comm_lamp.init("P9_25") != 1) {
-		error_log("IO ERROR - GPIO Setup Failed [COMM LAMP]");
+		error_log("IO ERROR - [COMM LAMP] GPIO Setup Failed");
 		fatal_err();
 	}
 	comm_lamp.set_dir("out"); 
@@ -204,7 +208,7 @@ bool io_setup() {
 
 	//Calibrate Sensors
 	if(imu.calibrate()) {
-		error_log("IO ERROR - IMU Calibration Failed");
+		error_log("IO ERROR - [IMU] Calibration Failed");
 		fatal_err();
 	}
 
@@ -218,7 +222,22 @@ bool io_setup() {
 	}
 
 	if(status != MBED_STATUS_READY) {
-		error_log("IO ERROR - MBED Timeout on Setup");
+		error_log("IO ERROR - [MBED] Timeout on Setup");
+		fatal_err();
+	}
+
+	if(alt_regulator.init(40,50,0,50,100)) {
+		error_log("IO ERROR - [ALTITUDE] PID Unstable Init Params");
+		fatal_err();
+	}
+
+	if(x_regulator.init(40,50,0,50,100)) {
+		error_log("IO ERROR - [ORIENTATION] PID Unstable Init Params");
+		fatal_err();
+	}
+
+	if(y_regulator.init(40,50,0,50,100)) {
+		error_log("IO ERROR - [ORIENTATION] PID Unstable Init Params");
 		fatal_err();
 	}
 
@@ -251,7 +270,7 @@ void get_motors() {
 
 	if(nok) {
 		fatal_err();
-		error_log("IO ERROR - Lost Communications [MBED]");
+		error_log("IO ERROR - [MBED] Lost Communications");
 		ePrevState = eState;
 		eState = eERR;
 	}
@@ -264,51 +283,48 @@ void set_motors() {
 
 	if(nok) {
 		fatal_err();
-		error_log("IO ERROR - Lost Communications [MBED]");
+		error_log("IO ERROR - [MBED] Lost Communications");
 		ePrevState = eState;
 		eState = eERR;
 	}
 }
 
 //Automates the takeoff proceedure
-bool takeoff() {
+bool takeoff() {	
+
+	get_motors();
+		bool ok = flight_altitude(TAKEOFF_ALTITUDE);
+		flight_stabilize(Vector3(0,0,0));
+	set_motors();
+
+	return ok;
+}
+
+// Run the altitude control system
+bool flight_altitude(unsigned short int desired) {
 	short int inch;
 	if(mbed.get_sonar(inch)) {
 		fatal_err();
-		error_log("IO ERROR - Lost Communications [MBED]");
+		error_log("IO ERROR - [MBED] Lost Communications");
 		ePrevState = eState;
 		eState = eERR;
 	}
 
-	if(inch > TAKEOFF_ALTITUDE) {
-		return true;		
+	if(!inDeadBand(desired,inch,4)) {
+		unsigned short int out;
+		if(alt_regulator.regulate(desired,(unsigned short int)inch,out)) {
+			error_log("IO ERROR - [ALTITUDE] PID Regulate Overflow");
+		}
+		m1 += out; m2 += out; m3 += out; m4 += out;
+		return false;
 	}
 
-	get_motors();
-		flight_altitude(1);
-		flight_stabilize(Vector3(0,0,0));
-	set_motors();
-
-	return false;
-}
-
-//Run the altitude control system
-// The dir is 1 for gain alt, -1 for loose alt, and 0 is maintain alt
-// The factor is the percent update rate (0-100)
-void flight_altitude(int dir, int factor) {
-	if(dir == 0 || dir > 1 || dir < -1) return;
-
-	int dif = 100+dir*factor;
-	m1 = (short int)((long int)m1*dif/100);
-	m2 = (short int)((long int)m2*dif/100);
-	m3 = (short int)((long int)m3*dif/100);
-	m4 = (short int)((long int)m4*dif/100);
+	return true;
 }
 
 // Run the stabilization control system
 // The desired vector is what orientation we want to be at
-// The factor is the percent update rate (0-100)
-void flight_stabilize(Vector3 desired, int factor) {
+void flight_stabilize(Vector3 desired) {
 	/* We want maintain some pitch and some yaw
 	*
 	*  (1)    (2)
@@ -330,33 +346,37 @@ void flight_stabilize(Vector3 desired, int factor) {
 	*  We are going to ignore z for now...
 	*/  
 	
-	// Find our Orientation Error
-	Vector3 error = orient - desired;
-
 	// Predict motor speed changes
-	int inc = 100+factor;
-	int dec = 100-factor;
-	if(error[0] < 0) {
-		m2 = (short int)((long int)m2*inc/100);
-		m4 = (short int)((long int)m4*inc/100);
-		m1 = (short int)((long int)m2*dec/100);
-		m3 = (short int)((long int)m2*dec/100);
-	} else if(error[0] > 0) {
-		m1 = (short int)((long int)m1*inc/100);
-		m3 = (short int)((long int)m3*inc/100);
-		m2 = (short int)((long int)m2*dec/100);
-		m4 = (short int)((long int)m4*dec/100);
+	unsigned short int xd = (unsigned short int)(desired[0]+0.5);
+	unsigned short int xo = (unsigned short int)(orient[0]+0.5);
+	if(!inDeadBand(xd,xo,2)) {
+		unsigned short int out;
+		if(x_regulator.regulate(xd,xo,out)) {
+			error_log("IO ERROR - [ORIENTATION] PID Regulate Overflow");
+		}
+		if(xo < xd) {
+			m2 += out; m4 += out;
+			m1 -= out; m3 -= out;
+		} else {
+			m1 += out; m3 += out;
+			m2 -= out; m4 -= out;
+		}
 	}
 
-	if(error[1] < 0) {
-		m3 = (short int)((long int)m3*inc/100);
-		m4 = (short int)((long int)m4*inc/100);
-		m1 = (short int)((long int)m1*dec/100);
-		m2 = (short int)((long int)m2*dec/100);
-	} else if(error[1] > 0) {
-		m1 = (short int)((long int)m1*inc/100);
-		m2 = (short int)((long int)m2*inc/100);
-		m3 = (short int)((long int)m3*dec/100);
-		m4 = (short int)((long int)m4*dec/100);
+	unsigned short int yd = (unsigned short int)(desired[1]+0.5);
+	unsigned short int yo = (unsigned short int)(orient[1]+0.5);
+	if(!inDeadBand(yd,yo,2)) {
+		unsigned short int out;
+		if(y_regulator.regulate(yd,yo,out)) {
+			error_log("IO ERROR - [ORIENTATION] PID Regulate Overflow");
+		}
+
+		if(yo < yd) {
+			m3 += out; m4 += out;
+			m1 -= out; m2 -= out;
+		} else {
+			m1 += out; m2 += out;
+			m3 -= out; m4 -= out;
+		}
 	}
 }
