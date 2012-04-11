@@ -312,10 +312,14 @@ bool flight_altitude(unsigned short int desired) {
 
 	if(!inDeadBand(desired,inch,4)) {
 		unsigned short int out;
-		if(alt_regulator.regulate(desired,(unsigned short int)inch,out)) {
+		if(alt_regulator.regulate(desired,inch,out)) {
 			error_log("IO ERROR - [ALTITUDE] PID Regulate Overflow");
 		}
-		m1 += out; m2 += out; m3 += out; m4 += out;
+		if(inch < desired) {
+			m1 += out; m2 += out; m3 += out; m4 += out;
+		} else {
+			m1 -= out; m2 -= out; m3 -= out; m4 -= out;
+		}
 		return false;
 	}
 
@@ -333,14 +337,14 @@ void flight_stabilize(Vector3 desired) {
 	*     |  |       +y <---O +z
 	*     ----
 	*    /    \
-	*  (3)    (4)
+	*  (4)    (3)
 	*
 	*  Rotation about x-axis is roll
 	*  Rotation about y-axis is pitch
 	*  Rotation about z-axis is yaw
 	*
-	*  If x is < 0, inc motors 2 & 4, dec motors 1 & 3
-	*  If x is > 0, inc motors 1 & 3, dec motors 2 & 4
+	*  If x is < 0, inc motors 2 & 3, dec motors 1 & 4
+	*  If x is > 0, inc motors 1 & 4, dec motors 2 & 3
 	*  If y is < 0, inc motors 3 & 4, dec motors 1 & 2
 	*  If y is > 0, inc motors 1 & 2, dec motors 3 & 4
 	*  We are going to ignore z for now...
@@ -355,11 +359,11 @@ void flight_stabilize(Vector3 desired) {
 			error_log("IO ERROR - [ORIENTATION] PID Regulate Overflow");
 		}
 		if(xo < xd) {
-			m2 += out; m4 += out;
-			m1 -= out; m3 -= out;
+			m2 += out; m3 += out;
+			m1 -= out; m4 -= out;
 		} else {
-			m1 += out; m3 += out;
-			m2 -= out; m4 -= out;
+			m1 += out; m4 += out;
+			m2 -= out; m3 -= out;
 		}
 	}
 
