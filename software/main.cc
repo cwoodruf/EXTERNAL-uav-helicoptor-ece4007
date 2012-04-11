@@ -272,7 +272,7 @@ void set_motors() {
 
 //Automates the takeoff proceedure
 bool takeoff() {
-	unsigned char inch;
+	short int inch;
 	if(mbed.get_sonar(inch)) {
 		fatal_err();
 		error_log("IO ERROR - Lost Communications [MBED]");

@@ -50,18 +50,18 @@ void control_loop() {
 		cout << "In Deadband at: " << value << endl;
 	}
 
-	register_timeout(control_loop,0.05);
+	register_timeout(control_loop,0.005);
 }
 
 
 int main(int argc, char **argv) {
 
-	if(pid.init(40,50,0,50,100) < 0) {
+	if(pid.init(40,50,0,5,100) < 0) {
 		cout << "Warning Unstable PID Parameters" << endl;
 		return -1;
 	}
 
-	register_timeout(control_loop,0.05);
+	register_timeout(control_loop,0.005);
 	
 	while(1) {;}
 	return 0;

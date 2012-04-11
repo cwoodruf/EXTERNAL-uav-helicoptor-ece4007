@@ -40,9 +40,10 @@ using namespace std;
 #define MBED_MOTOR_3_LB		0x07
 #define MBED_MOTOR_4_HB		0x08
 #define MBED_MOTOR_4_LB		0x09
-#define MBED_SONAR			0x0A
+#define MBED_SONAR_HB		0x0A
+#define MBED_SONAR_LB		0x0B
 
-#define MBED_ID			0x10
+#define MBED_ID				0x10
 
 
 #define MBED_STATUS_READY				0x01
@@ -69,7 +70,7 @@ class MBED : public I2C {
 		int set_motor_3(short int rpm);
 		int get_motor_4(short int &rpm);
 		int set_motor_4(short int rpm);
-		int get_sonar(unsigned char &in);
+		int get_sonar(short int &in);
 };
 
 MBED::MBED() : I2C(3,MBED_ID) {
@@ -153,8 +154,13 @@ int MBED::set_motor_4(short int rpm) {
 	return status | write_byte(MBED_MOTOR_4_LB,dlb);
 }
 
-int MBED::get_sonar(unsigned char &in) {
-	return read_byte(MBED_SONAR,in);
+int MBED::get_sonar(short int &in) {
+	unsigned char d;
+	int status = read_byte(MBED_SONAR_HB,d);
+	in = d << 8;
+	status |= read_byte(MBED_SONAR_LB,d);
+	in |= d;
+	return status;
 }
 
 #endif
