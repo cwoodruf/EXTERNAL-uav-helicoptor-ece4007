@@ -5,7 +5,7 @@ echo -e "Done\n\n"
 
 # Deps
 echo -e "Installing Dependencies\n"
-opkg install python-dev python-modules python-setuptools wireless-tools openssl openssl-dev
+opkg install python-dev python-modules python-setuptools openssl openssl-dev ncurses ncurses-dev
 echo -e "Done\n\n"
 
 # Tmp Setup
