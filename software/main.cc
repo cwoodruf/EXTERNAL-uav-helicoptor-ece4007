@@ -42,6 +42,7 @@ GPIO comm_lamp;
 GPIO err_lamp;
 IMU imu(IMU_RATE,0.001);
 Vector3 orient;
+Vector3 target_orient;
 MBED mbed;
 Altimeter alt;
 PID alt_regulator;
@@ -56,6 +57,8 @@ eSTATE eState = eSETUP;
 eSTATE ePrevState = eSETUP;
 eCONTROLLER eController = eLOCAL;
 short int m1,m2,m3,m4;
+unsigned short int target_alt = TAKEOFF_ALTITUDE;
+short int altitude;
 
 
 // Main Program - Runs Through the State Machine
@@ -65,7 +68,7 @@ int main() {
 		switch(eState) {
 			case eSETUP:
 				//Run setup routines, proceed if all pass
-				if(sys_setup() && !io_setup() && !comm_setup()) { 
+				if(sys_setup() && io_setup() && comm_setup()) { 
 					calib_lamp.set_value(1);
 					comm_lamp.set_value(1);
 					imu_loop();
@@ -106,9 +109,66 @@ int main() {
 				break;
 			case eFLY:
 				//Hover while waiting for user command and react
+				switch(eController) {
+					case eLOCAL:
+						switch(user.get_input()) {
+							case 'w':	//Forwared
+								target_orient[1] += 1;
+								break;
+							case 'a':	//Left
+								target_orient[0] -= 1;
+								break;
+							case 's':	//Backward
+								target_orient[1] -= 1;
+								break;
+							case 'd':	//Right
+								target_orient[0] += 1;
+								break;
+							case 'h':	//Hover
+								target_orient[0] = 0;
+								target_orient[1] = 0;
+							case 'u':	//Ascend
+								target_alt += 3;
+							case 'j':	//Descend
+								target_alt -= 3;
+							case 'l':	//Land
+								ePrevState = eState;
+								eState = eLAND;
+								break;
+							default:
+								break;
+						}	
+						break;
+					case eREMOTE:
+						break;
+					default:
+						eState = ePrevState = eERR;
+						error_log("SYSTEM ERROR - Unknown Controller Mode");
+						fatal_err();
+						break;
+				}
+				if(ton_delay(delay,true)) {
+					target_orient[0] = LIMIT(MIN_ORIENT,target_orient[0],MAX_ORIENT);
+					target_orient[1] = LIMIT(MIN_ORIENT,target_orient[1],MAX_ORIENT);
+					target_alt = LIMIT(MIN_ALTITUDE,target_alt,MAX_ALTITUDE);
+					get_altitude();
+					get_motors();
+					safety_checks();
+						flight_altitude(target_alt);
+						flight_stabilize(target_orient);
+					set_motors();
+					ton_delay(delay,false);
+				}
 				break;
 			case eLAND:
 				//Hover down slowly and land
+				if(ton_delay(delay,true)) {
+					if(landing()) {
+						ePrevState = eState;
+						eState = eGROUND;
+					}
+					ton_delay(delay,false);
+				}
 				break;
 			case eERR:
 				switch(ePrevState) {
@@ -288,10 +348,34 @@ void set_motors() {
 	}
 }
 
+//Updates global variable with altitude
+void get_altitude() {
+	if(mbed.get_sonar(altitude)) {
+		fatal_err();
+		error_log("IO ERROR - [MBED] Lost Communications");
+		ePrevState = eState;
+		eState = eERR;
+	}
+}
+
 //Automates the takeoff proceedure
 bool takeoff() {	
+	get_altitude();
 	get_motors();
-		bool ok = flight_altitude(TAKEOFF_ALTITUDE);
+	safety_checks();
+		bool ok = flight_altitude(target_alt);
+		flight_stabilize(Vector3(0,0,0));
+	set_motors();
+
+	return ok;
+}
+
+//Automates the landing proceedure
+bool landing() {	
+	get_altitude();
+	get_motors();
+	safety_checks();
+		bool ok = flight_altitude(0);
 		flight_stabilize(Vector3(0,0,0));
 	set_motors();
 
@@ -300,20 +384,12 @@ bool takeoff() {
 
 // Run the altitude control system
 bool flight_altitude(unsigned short int desired) {
-	short int inch;
-	if(mbed.get_sonar(inch)) {
-		fatal_err();
-		error_log("IO ERROR - [MBED] Lost Communications");
-		ePrevState = eState;
-		eState = eERR;
-	}
-
-	if(!inDeadBand(desired,inch,ALTITUDE_DEADBAND)) {
+	if(!inDeadBand(desired,altitude,ALTITUDE_DEADBAND)) {
 		unsigned short int out;
-		if(alt_regulator.regulate(desired,inch,out)) {
+		if(alt_regulator.regulate(desired,altitude,out)) {
 			error_log("IO ERROR - [ALTITUDE] PID Regulate Overflow");
 		}
-		if(inch < desired) {
+		if(altitude < desired) {
 			m1 += out; m2 += out; m3 += out; m4 += out;
 		} else {
 			m1 -= out; m2 -= out; m3 -= out; m4 -= out;
@@ -381,4 +457,8 @@ void flight_stabilize(Vector3 desired) {
 			m3 -= out; m4 -= out;
 		}
 	}
+}
+
+void safety_checks() {
+
 }
