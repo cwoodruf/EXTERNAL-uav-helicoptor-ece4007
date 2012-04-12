@@ -2,8 +2,11 @@
 #define MAIN_H
 
 //Defines
-#define RATE 0.0012
-#define TAKEOFF_ALTITUDE 48
+#define IMU_RATE 			0.0012
+#define TAKEOFF_ALTITUDE 	48
+#define ORIENT_DEADBAND 	1
+#define ALTITUDE_DEADBAND 	4
+#define REGULATION_RATE		0.05
 
 //Enumerators
 typedef enum _eSTATE {

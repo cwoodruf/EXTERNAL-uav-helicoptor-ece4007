@@ -19,7 +19,6 @@
 * ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR 
 * OTHER DEALINGS IN THE SOFTWARE.
 */
-
 #include <iostream>
 #include <string>
 #include <string.h>
@@ -33,6 +32,7 @@
 #include "controls/pid.h"
 #include "util.h"
 #include "main.h"
+#include "user.h"
 
 using namespace std;
 
@@ -40,13 +40,14 @@ using namespace std;
 GPIO calib_lamp;
 GPIO comm_lamp;
 GPIO err_lamp;
-IMU imu(RATE,0.001);
+IMU imu(IMU_RATE,0.001);
 Vector3 orient;
 MBED mbed;
 Altimeter alt;
 PID alt_regulator;
 PID x_regulator;
 PID y_regulator;
+User user(0,0);
 ofstream err_file;
 
 //Global Variables
@@ -59,15 +60,15 @@ short int m1,m2,m3,m4;
 
 // Main Program - Runs Through the State Machine
 int main() {
-	T_TONDelay delay = {false,false,0.05,0};
+	T_TONDelay delay = {false,false,REGULATION_RATE,0};
 	while(1) {
 		switch(eState) {
 			case eSETUP:
 				//Run setup routines, proceed if all pass
-				if(sys_setup() && io_setup() && comm_setup()) { 
+				if(sys_setup() && !io_setup() && !comm_setup()) { 
 					calib_lamp.set_value(1);
 					comm_lamp.set_value(1);
-					register_timeout(imu_loop,RATE);
+					imu_loop();
 					eState = eGROUND;
 				} else {
 					eState = eERR;
@@ -78,9 +79,7 @@ int main() {
 				//Wait for takeoff command
 				switch(eController) {
 					case eLOCAL:
-						char cmd;
-						cin >> cmd;
-						if(cmd == 't') {
+						if(user.get_input() == 't') {
 							cout << "TAKEOFF BEGIN" << endl;
 							ePrevState = eState;
 							eState = eTAKEOFF;
@@ -170,7 +169,7 @@ void error_log(const char *data) {
 // Called on a timeout, updates orientation
 void imu_loop() {
 	imu.update(orient);
-	register_timeout(imu_loop,RATE);
+	register_timeout(imu_loop,IMU_RATE);
 }
 
 // Setup System
@@ -291,7 +290,6 @@ void set_motors() {
 
 //Automates the takeoff proceedure
 bool takeoff() {	
-
 	get_motors();
 		bool ok = flight_altitude(TAKEOFF_ALTITUDE);
 		flight_stabilize(Vector3(0,0,0));
@@ -310,7 +308,7 @@ bool flight_altitude(unsigned short int desired) {
 		eState = eERR;
 	}
 
-	if(!inDeadBand(desired,inch,4)) {
+	if(!inDeadBand(desired,inch,ALTITUDE_DEADBAND)) {
 		unsigned short int out;
 		if(alt_regulator.regulate(desired,inch,out)) {
 			error_log("IO ERROR - [ALTITUDE] PID Regulate Overflow");
@@ -353,7 +351,7 @@ void flight_stabilize(Vector3 desired) {
 	// Predict motor speed changes
 	unsigned short int xd = (unsigned short int)(desired[0]+0.5);
 	unsigned short int xo = (unsigned short int)(orient[0]+0.5);
-	if(!inDeadBand(xd,xo,2)) {
+	if(!inDeadBand(xd,xo,ORIENT_DEADBAND)) {
 		unsigned short int out;
 		if(x_regulator.regulate(xd,xo,out)) {
 			error_log("IO ERROR - [ORIENTATION] PID Regulate Overflow");
@@ -369,7 +367,7 @@ void flight_stabilize(Vector3 desired) {
 
 	unsigned short int yd = (unsigned short int)(desired[1]+0.5);
 	unsigned short int yo = (unsigned short int)(orient[1]+0.5);
-	if(!inDeadBand(yd,yo,2)) {
+	if(!inDeadBand(yd,yo,ORIENT_DEADBAND)) {
 		unsigned short int out;
 		if(y_regulator.regulate(yd,yo,out)) {
 			error_log("IO ERROR - [ORIENTATION] PID Regulate Overflow");
