@@ -5,7 +5,11 @@
 #define IMU_RATE 			0.0012
 #define TAKEOFF_ALTITUDE 	48
 #define ORIENT_DEADBAND 	1
+#define MIN_ORIENT			-5
+#define MAX_ORIENT			5
 #define ALTITUDE_DEADBAND 	4
+#define MIN_ALTITUDE		24
+#define MAX_ALTITUDE		144
 #define REGULATION_RATE		0.05
 
 //Enumerators
@@ -32,8 +36,11 @@ bool io_setup();
 bool comm_setup();
 void get_motors();
 void set_motors();
+void get_altitude();
 bool takeoff();
+bool landing();
 bool flight_altitude(unsigned short int desired);
 void flight_stabilize(Vector3 desired);
+void safety_checks();
 
 #endif
