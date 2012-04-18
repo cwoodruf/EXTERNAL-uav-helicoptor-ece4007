@@ -139,17 +139,6 @@ int16_t char_curve(T_CharCurvePoint *curve, uint16_t x) {
 	return interp_2d(pt1,pt2,x);
 }
 
-double inv_sqrt(double x) {
-	double halfx = 0.5*x;
-	double y = x;
-	long i = *(long *) &y;
-	i = 0x5F3759DF - (i >> 1);
-	y = *(double *) &i;
-	y = y * (1.5 - (halfx * y * y));
-
-	return y;
-}
-
 double deg2rad(double deg) {
 	return ((deg*M_PI)/180);
 }
