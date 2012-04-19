@@ -111,9 +111,9 @@ class IMU {
 			}
 
 			for(int i=0;i<3;++i) {
-				cal_a[i] = a[i] / 1000.0;
-				cal_g[i] = g[i] / 1000.0;
-				//cal_m[i] = m[i] / 1000.0;
+				cal_a[i] = a[i] / samples;
+				cal_g[i] = g[i] / samples;
+				//cal_m[i] = m[i] / samples;
 			}
 
 			CALIBRATED = true;
