@@ -111,9 +111,9 @@ class IMU {
 			}
 
 			for(int i=0;i<3;++i) {
-				cal_a[i] /= 1000.0;
-				cal_g[i] /= 1000.0;
-				//cal_m[i] /= 1000.0;
+				cal_a[i] = a[i] / 1000.0;
+				cal_g[i] = g[i] / 1000.0;
+				//cal_m[i] = m[i] / 1000.0;
 			}
 
 			CALIBRATED = true;
@@ -145,18 +145,18 @@ class IMU {
 			}
 
 			Vector3 a(
-				(double)(ax-cal_a[0])*0.004,
-				(double)(ay-cal_a[1])*0.004,
-				(double)(az-cal_a[2])*0.004
+				((double)ax-cal_a[0])*0.004,
+				((double)ay-cal_a[1])*0.004,
+				((double)az-cal_a[2])*0.004
 			);
 			a[0] = (a[0] > 2.0) ? 2.0 : (a[0] < -2.0 ? -2.0 : a[0]);
 			a[1] = (a[1] > 2.0) ? 2.0 : (a[1] < -2.0 ? -2.0 : a[1]);
 			a[2] = (a[2] > 2.0) ? 2.0 : (a[2] < -2.0 ? -2.0 : a[2]);
 	
 			Vector3 g(
-				((gx-cal_g[0])/14.375)*M_PI/180,
-				((gy-cal_g[1])/14.375)*M_PI/180,
-				((gz-cal_g[2])/14.375)*M_PI/180
+				(((double)gx-cal_g[0])/14.375)*M_PI/180,
+				(((double)gy-cal_g[1])/14.375)*M_PI/180,
+				(((double)gz-cal_g[2])/14.375)*M_PI/180
 			);
 	
 			//Vector3 m(mx,my,mz);
