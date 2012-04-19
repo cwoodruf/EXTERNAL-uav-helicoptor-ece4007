@@ -131,11 +131,11 @@ class ITG3200 : public I2C {
 
 };
 
-ITG3200::ITG3200() : I2C(2,ITG3200_ADR_ADO_HI) {
+ITG3200::ITG3200() : I2C(3,ITG3200_ADR_ADO_LO) {
 
 }
 
-ITG3200::ITG3200(int channel) : I2C(channel,ITG3200_ADR_ADO_HI) {
+ITG3200::ITG3200(int channel) : I2C(channel,ITG3200_ADR_ADO_LO) {
 
 }
 
