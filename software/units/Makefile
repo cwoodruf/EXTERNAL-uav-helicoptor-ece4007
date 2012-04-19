@@ -22,7 +22,7 @@
 CXX 		= /usr/bin/g++
 CXXFLAGS 	= -Wall -g
 
-all: testTicker testTimeout testPID testUtil testADXL testHMC testITG testList testHashTable testCircularBuffer testGPIO testVector testPubsub
+all: testTicker testTimeout testPID testUtil testADXL testHMC testITG testList testHashTable testCircularBuffer testGPIO testVector testPubsub testIMU
 
 testTicker:	test_ticker.o
 	$(CXX) $(CXXFLAGS) -o ticker test_ticker.o
@@ -76,6 +76,9 @@ testPubsub: test_pubsub.o
 	$(CXX) $(CXXFLAGS) -o pubsub test_pubsub.o
 	@rm -f *.o
 
+testIMU:	test_imu.o
+	$(CXX) $(CXXFLAGS) -o imu_test test_imu.o
+	@rm -f *.o
 
 clean:
-	@rm -f *.o ticker timeout pid util adxl345 hmc5883l itg3200 list hash cbuf blink vec pubsub
+	@rm -f *.o ticker timeout pid util adxl345 hmc5883l itg3200 list hash cbuf blink vec pubsub imu_test
