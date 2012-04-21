@@ -38,6 +38,7 @@ void imu_loop() {
 
 int main() {
 	T_TONDelay delay = {false,false,1.0,0};
+	T_TONDelay imudelay = {false,false,RATE,0};
 
     imu.calibrate();
     if(!imu.isCalibrated()) {
@@ -45,13 +46,17 @@ int main() {
         return -1;
     }
 
-    imu_loop();
-
     while(1) {
+		if(ton_delay(imudelay,true)) {
+    		imu.update(angles);
+			ton_delay(imudelay,false);
+		}
+
     	if(ton_delay(delay,true)) {
 			std::cout << angles << std::endl;
 			ton_delay(delay,false);
 		}
+		
     }
     return 0;
 }
