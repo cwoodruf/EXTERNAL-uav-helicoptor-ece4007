@@ -177,6 +177,7 @@ class ADXL345 : public I2C {
 		int get_data_y_raw(short int &y);
 		int get_data_z(short int &z);
 		int get_data_z_raw(short int &z);
+		int get_data_raw(short int &x, short int &y, short int &z);
 
 
 		//High Level Functions
@@ -802,6 +803,17 @@ int ADXL345::get_data_z(short int &z) {
 	z = z / iscale * 4;	
 
 	return status;	
+}
+
+int ADXL345::get_data_raw(short int &x, short int &y, short int &z) {
+	unsigned char data[6];
+	int status = read_multiple_bytes(ADXL345_DATAX0,data,6);
+
+	x = ((short int)data[1] << 8) | data[0];
+	y = ((short int)data[3] << 8) | data[2];
+	z = ((short int)data[5] << 8) | data[4];
+
+	return status;
 }
 
 int ADXL345::set_standby_mode() {

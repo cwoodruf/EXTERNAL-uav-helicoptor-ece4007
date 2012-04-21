@@ -55,7 +55,9 @@ class I2C {
 		int write_byte(unsigned char reg, unsigned char data);
 		int write_masked_byte(unsigned char reg, unsigned char data, unsigned char mask);
 		int read_current_byte(unsigned char &data);
+		int read_current_bytes(unsigned char *data,int num_bytes);
 		int read_byte(unsigned char reg, unsigned char &data);
+		int read_multiple_bytes(unsigned char reg, unsigned char *data, int num_bytes);
 
 };
 
@@ -140,6 +142,14 @@ int I2C::read_current_byte(unsigned char &data) {
 	return 0;
 }
 
+int I2C::read_current_bytes(unsigned char *data, int num_bytes) {
+	if(read(fdr,data,num_bytes) != 1) {
+		return -1;
+	}
+
+	return 0;
+}
+
 int I2C::read_byte(unsigned char reg, unsigned char &data) {
 	if(write_address(reg) != 0) {
 		return -1;
@@ -148,5 +158,12 @@ int I2C::read_byte(unsigned char reg, unsigned char &data) {
 	return read_current_byte(data);
 }
 
+int I2C::read_multiple_bytes(unsigned char reg, unsigned char *data, int num_bytes) {
+	if(write_address(reg) != 0) {
+		return -1;
+	}
+
+	return read_current_bytes(data,num_bytes);
+}
 
 #endif

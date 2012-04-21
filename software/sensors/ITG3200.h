@@ -126,6 +126,7 @@ class ITG3200 : public I2C {
 		int get_x_out(short int &x);
 		int get_y_out(short int &y);
 		int get_z_out(short int &z);
+		int get_data_raw(short int &x, short int &y, short int &z);
 		int get_power_management(bool &h_reset, bool &sleep, bool &stby_xg, bool &stby_yg, bool &stby_zg, unsigned char &clk_sel);
 		int set_power_management(bool h_reset, bool sleep, bool stby_xg, bool stby_yg, bool stby_zg, unsigned char clk_sel);
 
@@ -247,6 +248,17 @@ int ITG3200::get_z_out(short int &z) {
 	z = v;
 	status += read_byte(ITG3200_GYRO_ZOUT_LO,v);
 	z = (z << 8) | v;
+
+	return status;
+}
+
+int ITG3200::get_data_raw(short int &x, short int &y, short int &z) {
+	unsigned char data[6];
+	int status = read_multiple_bytes(ITG3200_GYRO_XOUT_HI,data,6);
+
+	x = ((short int)data[0] << 8) | data[1];
+	y = ((short int)data[2] << 8) | data[3];
+	z = ((short int)data[4] << 8) | data[5];
 
 	return status;
 }
