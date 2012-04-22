@@ -20,7 +20,7 @@
 
 
 CXX 		= /usr/bin/g++
-CXXFLAGS 	= -Wall -g
+CXXFLAGS 	= -Wall -g -lrt
 
 all: testTicker testTimeout testPID testUtil testADXL testHMC testITG testList testHashTable testCircularBuffer testGPIO testVector testPubsub testIMU
 

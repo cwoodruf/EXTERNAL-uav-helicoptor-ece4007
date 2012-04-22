@@ -22,11 +22,11 @@
 CXX 		= /usr/bin/g++
 CXXFLAGS 	= -Wall -g -lrt
 
-all: main
+all: testTonPulse
 
-main:	main.o
-	$(CXX) $(CXXFLAGS) -o helicat main.o
-	@rm -f *.o 
+testTonPulse: test_ton_pulse.o
+	$(CXX) $(CXXFLAGS) -o ton_pulse test_ton_pulse.o
+	@rm -f *.o
+
 clean:
-	@rm -f *.o helicat error.log
-
+	@rm -f *.o ton_pulse
