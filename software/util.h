@@ -23,7 +23,9 @@
 #define UTIL_H
 
 #include <stdint.h>
-#include <time.h>
+#include <unistd.h>
+#include <sys/time.h>
+#include <stdio.h>
 #include <iostream>
 #include <math.h>
 
@@ -39,7 +41,7 @@ struct T_TONDelay {
 	bool in;
 	bool out;
 	double delay;
-	time_t start_time;
+	struct timeval start_time;
 };
 
 
@@ -78,15 +80,18 @@ bool inDeadBand(int64_t valueA, int64_t valueB, int64_t thresh) {
 
 bool ton_delay(T_TONDelay &ton, bool in) {
 
-	time_t now;
-	time(&now);
+	struct timeval now;
+	gettimeofday(&now,NULL);
 	
 	if(in) {
 		if(!ton.in) {
 			ton.start_time = now;
 			ton.out = false;
 		} else {
-			ton.out = difftime(now,ton.start_time) >= ton.delay;
+			double s = (double)(now.tv_sec - ton.start_time.tv_sec);
+			double us = (double)(now.tv_usec - ton.start_time.tv_usec);
+			double t = s + us/1000000;
+			ton.out = t >= ton.delay;
 		}
 	} else {
 		ton.out = false;
@@ -97,18 +102,20 @@ bool ton_delay(T_TONDelay &ton, bool in) {
 
 }
 
-
 bool toff_delay(T_TONDelay &toff, bool in) {
 
-	time_t now;
-	time(&now);
+	struct timeval now;
+	gettimeofday(&now,NULL);
 
 	if(!in) {
 		if(toff.in) {
 			toff.start_time = now;
 			toff.out = true;
 		} else {
-			toff.out = !(difftime(now,toff.start_time) > toff.delay);
+			double s = (double)(now.tv_sec - toff.start_time.tv_sec);
+			double us = (double)(now.tv_usec - toff.start_time.tv_usec);
+			double t = s + us/1000000;
+			toff.out = !(t > toff.delay);
 		}
 	} else {
 		toff.out = true;

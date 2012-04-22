@@ -58,14 +58,14 @@ int main() {
 	cout << "Testing char_curve..." << ((char_curve(curve,5) == 5) ? "Pass":"Fail") << endl;
 
 	cout << "Testing ton_delay...Please Wait 5 seconds...";
-	T_TONDelay ton = {false,false,5.0,0};
+	T_TONDelay ton = {false,false,5.0,{0}};
 	cout.flush();
 
 	while(!ton_delay(ton,true)) {;}
 	cout << "Pass" << endl;
 
 	cout << "Testing toff_delay...Please Wait 5 seconds...";
-	T_TONDelay toff = {true,true,5.0,0};
+	T_TONDelay toff = {true,true,5.0,{0}};
 	cout.flush();
 
 	while(toff_delay(toff,false)) {;}
