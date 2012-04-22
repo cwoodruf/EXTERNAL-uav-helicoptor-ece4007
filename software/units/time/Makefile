@@ -22,11 +22,23 @@
 CXX 		= /usr/bin/g++
 CXXFLAGS 	= -Wall -g -lrt
 
-all: testTonPulse
+all: testTonPulse testTimeoutPulse testTonSystime testTimeoutSystime
 
 testTonPulse: test_ton_pulse.o
 	$(CXX) $(CXXFLAGS) -o ton_pulse test_ton_pulse.o
 	@rm -f *.o
 
+testTimeoutPulse: test_timeout_pulse.o
+	$(CXX) $(CXXFLAGS) -o timeout_pulse test_timeout_pulse.o
+	@rm -f *.o
+
+testTonSystime: test_ton_systime.o
+	$(CXX) $(CXXFLAGS) -o ton_systime test_ton_systime.o
+	@rm -f *.o
+
+testTimeoutSystime: test_timeout_systime.o
+	$(CXX) $(CXXFLAGS) -o timeout_systime test_timeout_systime.o
+	@rm -f *.o
+
 clean:
-	@rm -f *.o ton_pulse
+	@rm -f *.o ton_pulse timeout_pulse ton_systime timeout_systime
