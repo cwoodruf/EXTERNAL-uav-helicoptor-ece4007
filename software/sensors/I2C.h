@@ -19,9 +19,6 @@
 * ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR 
 * OTHER DEALINGS IN THE SOFTWARE.
 */
-
-
-
 #ifndef I2C_H
 #define I2C_H
 
@@ -134,7 +131,7 @@ int I2C::write_masked_byte(unsigned char reg, unsigned char data, unsigned char 
 
 
 int I2C::read_current_byte(unsigned char &data) {
-	if(read(fdr,buf,1) != 1) {
+	if(read(fdr,buf,1) < 1) {
 		return -1;
 	}
 
@@ -143,7 +140,7 @@ int I2C::read_current_byte(unsigned char &data) {
 }
 
 int I2C::read_current_bytes(unsigned char *data, int num_bytes) {
-	if(read(fdr,data,num_bytes) != 1) {
+	if(read(fdr,data,num_bytes) < 1) {
 		return -1;
 	}
 
