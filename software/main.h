@@ -2,11 +2,12 @@
 #define MAIN_H
 
 //Defines
-#define IMU_RATE 			0.0012
 #define TAKEOFF_ALTITUDE 	48
 #define ORIENT_DEADBAND 	1
-#define MIN_ORIENT			-5
-#define MAX_ORIENT			5
+#define MIN_ORIENT			-15
+#define MAX_ORIENT			15
+#define MIN_CRIT_ANGLE		-30
+#define MAX_CRIT_ANGLE		30
 #define ALTITUDE_DEADBAND 	4
 #define MIN_ALTITUDE		24
 #define MAX_ALTITUDE		144
@@ -22,11 +23,6 @@ typedef enum _eSTATE {
 	eERR
 }eSTATE;
 
-typedef enum _eCONTROLLER {
-	eLOCAL,
-	eREMOTE
-}eCONTROLLER;
-
 //Prototypes
 void fatal_err();
 void error_log(const char *data);
@@ -36,6 +32,7 @@ bool io_setup();
 bool comm_setup();
 void get_motors();
 void set_motors();
+void get_orient();
 void get_altitude();
 bool takeoff();
 bool landing();

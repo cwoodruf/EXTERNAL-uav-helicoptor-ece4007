@@ -30,136 +30,105 @@
 using namespace std;
 
 //Register Addresses
-#define MBED_WHOAMI			0x00
-#define MBED_STATUS			0x01
-#define MBED_MOTOR_1_HB		0x02
-#define MBED_MOTOR_1_LB		0x03
-#define MBED_MOTOR_2_HB		0x04
-#define MBED_MOTOR_2_LB		0x05
-#define MBED_MOTOR_3_HB		0x06
-#define MBED_MOTOR_3_LB		0x07
-#define MBED_MOTOR_4_HB		0x08
-#define MBED_MOTOR_4_LB		0x09
-#define MBED_SONAR_HB		0x0A
-#define MBED_SONAR_LB		0x0B
+#define MBED_STATUS			0x00
+#define MBED_DATA			0x01
 
-#define MBED_ID				0x10
+#define MBED_MOTOR_ID		0x10
+#define MBED_IMU_ID			0x11
 
 
-#define MBED_STATUS_READY				0x01
-#define MBED_STATUS_PID_INIT_ERROR		0x02
-#define MBED_STATUS_PID_REGULATE_ERROR	0x04
-
-class MBED : public I2C {
+class MMBED : public I2C {
 
 	private:
 
 	public:
-		MBED();
-		MBED(int i);
+		MMBED();
+		MMBED(int i);
 
-		~MBED();
+		~MMBED();
 		
-		int get_whoami(unsigned char &id);
 		int get_status(unsigned char &status);
-		int get_motor_1(short int &rpm);
-		int set_motor_1(short int rpm);
-		int get_motor_2(short int &rpm);
-		int set_motor_2(short int rpm);
-		int get_motor_3(short int &rpm);
-		int set_motor_3(short int rpm);
-		int get_motor_4(short int &rpm);
-		int set_motor_4(short int rpm);
-		int get_sonar(short int &in);
+		int get_data(short int &m1, short int &m2, short int &m3, short int &m4, short int &sonar);
+		int set_data(short int m1, short int m2, short int m3, short int m4);
 };
 
-MBED::MBED() : I2C(3,MBED_ID) {
+MMBED::MMBED() : I2C(3,MBED_MOTOR_ID) {
 }
 
-MBED::MBED(int i) : I2C(i,MBED_ID) {
+MMBED::MMBED(int i) : I2C(i,MBED_MOTOR_ID) {
 }
 
-MBED::~MBED() {
+MMBED::~MMBED() {
 }
 
-int MBED::get_whoami(unsigned char &id) {
-	return read_byte(MBED_WHOAMI,id);
-}
-
-int MBED::get_status(unsigned char &status) {
+int MMBED::get_status(unsigned char &status) {
 	return read_byte(MBED_STATUS,status);
 }
 
-int MBED::get_motor_1(short int &rpm) {
-	unsigned char d;
-	int status = read_byte(MBED_MOTOR_1_HB,d);
-	rpm = d << 8;
-	status |= read_byte(MBED_MOTOR_1_LB,d);
-	rpm |= d;
+int MMBED::get_data(short int &m1, short int &m2, short int &m3, short int &m4, short int &sonar) {
+	unsigned char data[10];
+	int status = read_multiple_bytes(MBED_DATA,data,10);
+
+	m1 = ((short int)data[0] << 8) | data[1];
+	m2 = ((short int)data[2] << 8) | data[3];
+	m3 = ((short int)data[4] << 8) | data[5];
+	m4 = ((short int)data[6] << 8) | data[7];
+	sonar = ((short int)data[8] << 8) | data[9];
+
 	return status;
 }
 
-int MBED::set_motor_1(short int rpm) {
-	unsigned char dlb = rpm & 0x00FF;
-	unsigned char dhb = rpm >> 8;
-	int status = write_byte(MBED_MOTOR_1_HB,dhb);
-	return status | write_byte(MBED_MOTOR_1_LB,dlb);
+int MMBED::set_data(short int m1, short int m2, short int m3, short int m4) {
+	unsigned char data[8];
+	
+	data[0] = (unsigned char)(m1 >> 8);
+	data[1] = (unsigned char)(m1 && 0x00FF);
+	data[2] = (unsigned char)(m2 >> 8);
+	data[3] = (unsigned char)(m2 && 0x00FF);
+	data[4] = (unsigned char)(m3 >> 8);
+	data[5] = (unsigned char)(m3 && 0x00FF);
+	data[6] = (unsigned char)(m4 >> 8);
+	data[7] = (unsigned char)(m4 && 0x00FF);
+
+	return write_multiple_bytes(MBED_DATA,data,8);
 }
 
-int MBED::get_motor_2(short int &rpm) {
-	unsigned char d;
-	int status = read_byte(MBED_MOTOR_2_HB,d);
-	rpm = d << 8;
-	status |= read_byte(MBED_MOTOR_2_LB,d);
-	rpm |= d;
-	return status;
+
+class IMBED : public I2C {
+
+	private:
+
+	public:
+		IMBED();
+		IMBED(int i);
+
+		~IMBED();
+		
+		int get_status(unsigned char &status);
+		int get_data(short int &x, short int &y, short int &z);
+};
+
+IMBED::IMBED() : I2C(3,MBED_IMU_ID) {
 }
 
-int MBED::set_motor_2(short int rpm) {
-	unsigned char dlb = rpm & 0x00FF;
-	unsigned char dhb = rpm >> 8;
-	int status = write_byte(MBED_MOTOR_2_HB,dhb);
-	return status | write_byte(MBED_MOTOR_2_LB,dlb);
+IMBED::IMBED(int i) : I2C(i,MBED_IMU_ID) {
 }
 
-int MBED::get_motor_3(short int &rpm) {
-	unsigned char d;
-	int status = read_byte(MBED_MOTOR_3_HB,d);
-	rpm = d << 8;
-	status |= read_byte(MBED_MOTOR_3_LB,d);
-	rpm |= d;
-	return status;
+IMBED::~IMBED() {
 }
 
-int MBED::set_motor_3(short int rpm) {
-	unsigned char dlb = rpm & 0x00FF;
-	unsigned char dhb = rpm >> 8;
-	int status = write_byte(MBED_MOTOR_3_HB,dhb);
-	return status | write_byte(MBED_MOTOR_3_LB,dlb);
+int IMBED::get_status(unsigned char &status) {
+	return read_byte(MBED_STATUS,status);
 }
 
-int MBED::get_motor_4(short int &rpm) {
-	unsigned char d;
-	int status = read_byte(MBED_MOTOR_4_HB,d);
-	rpm = d << 8;
-	status |= read_byte(MBED_MOTOR_4_LB,d);
-	rpm |= d;
-	return status;
-}
+int IMBED::get_data(short int &x, short int &y, short int &z) {
+	unsigned char data[6];
+	int status = read_multiple_bytes(MBED_DATA,data,6);
 
-int MBED::set_motor_4(short int rpm) {
-	unsigned char dlb = rpm & 0x00FF;
-	unsigned char dhb = rpm >> 8;
-	int status = write_byte(MBED_MOTOR_4_HB,dhb);
-	return status | write_byte(MBED_MOTOR_4_LB,dlb);
-}
+	x = ((short int)data[0] << 8) | data[1];
+	y = ((short int)data[2] << 8) | data[3];
+	z = ((short int)data[4] << 8) | data[5];
 
-int MBED::get_sonar(short int &in) {
-	unsigned char d;
-	int status = read_byte(MBED_SONAR_HB,d);
-	in = d << 8;
-	status |= read_byte(MBED_SONAR_LB,d);
-	in |= d;
 	return status;
 }
 

@@ -18,11 +18,16 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER 
 # DEALINGS IN THE SOFTWARE.
 
-
+CC			= /usr/bin/gcc
+CFLAGS		= -Wall -g -lrt
 CXX 		= /usr/bin/g++
 CXXFLAGS 	= -Wall -g -lrt
 
-all: testTonPulse testTimeoutPulse testTonSystime testTimeoutSystime
+all: i2c_bench testTonPulse testTimeoutPulse testTonSystime testTimeoutSystime
+
+i2c_bench: i2c_bench.o
+	$(CC) $(CFLAGS) -o i2c_bench i2c_bench.o
+	@rm -f *.o
 
 testTonPulse: test_ton_pulse.o
 	$(CXX) $(CXXFLAGS) -o ton_pulse test_ton_pulse.o
@@ -41,4 +46,4 @@ testTimeoutSystime: test_timeout_systime.o
 	@rm -f *.o
 
 clean:
-	@rm -f *.o ton_pulse timeout_pulse ton_systime timeout_systime
+	@rm -f *.o i2c_bench ton_pulse timeout_pulse ton_systime timeout_systime
