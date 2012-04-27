@@ -41,7 +41,7 @@ class I2C {
 	protected:
 		int fdr;
 		int fdw;
-		char buf[10];
+		char buf[20];
 		int status;
 
 	public:
@@ -50,6 +50,7 @@ class I2C {
 		int get_status();
 		int write_address(unsigned char reg);
 		int write_byte(unsigned char reg, unsigned char data);
+		int write_multiple_bytes(unsigned char reg, unsigned char *data, int num_bytes);
 		int write_masked_byte(unsigned char reg, unsigned char data, unsigned char mask);
 		int read_current_byte(unsigned char &data);
 		int read_current_bytes(unsigned char *data,int num_bytes);
@@ -111,6 +112,20 @@ int I2C::write_byte(unsigned char reg, unsigned char data) {
 	if(write(fdw,buf,2) != 2) {
 		return -1;
 	}
+	return 0;
+}
+
+int I2C::write_multiple_bytes(unsigned char reg, unsigned char *data, int num_bytes) {
+	buf[0] = reg;
+	memcpy(buf+1,data,num_bytes);
+	char *out = new char[num_bytes+1];
+	
+
+	if(write(fdw,out,num_bytes+1) != 2) {
+		return -1;
+	}
+
+	delete out;
 	return 0;
 }
 

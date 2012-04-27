@@ -24,6 +24,7 @@
 #include <string.h>
 #include <time.h>
 #include <fstream>
+#include <pthread.h>
 #include "imu.h"
 #include "sensors/mbed.h"
 #include "sensors/altimeter.h"
@@ -40,10 +41,10 @@ using namespace std;
 GPIO calib_lamp;
 GPIO comm_lamp;
 GPIO err_lamp;
-IMU imu(IMU_RATE,0.001);
 Vector3 orient;
 Vector3 target_orient;
-MBED mbed;
+MMBED mmbed;
+IMBED imbed;
 Altimeter alt;
 PID alt_regulator;
 PID x_regulator;
@@ -55,15 +56,14 @@ ofstream err_file;
 bool FATAL = false;
 eSTATE eState = eSETUP;
 eSTATE ePrevState = eSETUP;
-eCONTROLLER eController = eLOCAL;
-short int m1,m2,m3,m4;
+short int m1,m2,m3,m4,sonar;
 unsigned short int target_alt = TAKEOFF_ALTITUDE;
 short int altitude;
 
 
 // Main Program - Runs Through the State Machine
 int main() {
-	T_TONDelay delay = {false,false,REGULATION_RATE,0};
+	T_TONDelay delay = {false,false,REGULATION_RATE,{0}};
 	while(1) {
 		switch(eState) {
 			case eSETUP:
@@ -71,7 +71,6 @@ int main() {
 				if(sys_setup() && io_setup() && comm_setup()) { 
 					calib_lamp.set_value(1);
 					comm_lamp.set_value(1);
-					imu_loop();
 					eState = eGROUND;
 				} else {
 					eState = eERR;
@@ -79,22 +78,10 @@ int main() {
 				ePrevState = eSETUP;
 				break;
 			case eGROUND:
-				//Wait for takeoff command
-				switch(eController) {
-					case eLOCAL:
-						if(user.get_input() == 't') {
-							cout << "TAKEOFF BEGIN" << endl;
-							ePrevState = eState;
-							eState = eTAKEOFF;
-						}
-						break;
-					case eREMOTE:
-						break;
-					default:
-						eState = ePrevState = eERR;
-						error_log("SYSTEM ERROR - Unknown Controller Mode");
-						fatal_err();
-						break;
+				//Wait for takeoff command (A Button)
+				if(SSL_SERVER::tXbox.buttons[0]) {
+					ePrevState = eState;
+					eState = eTAKEOFF;
 				}
 				break;
 			case eTAKEOFF:
@@ -109,49 +96,12 @@ int main() {
 				break;
 			case eFLY:
 				//Hover while waiting for user command and react
-				switch(eController) {
-					case eLOCAL:
-						switch(user.get_input()) {
-							case 'w':	//Forwared
-								target_orient[1] += 1;
-								break;
-							case 'a':	//Left
-								target_orient[0] -= 1;
-								break;
-							case 's':	//Backward
-								target_orient[1] -= 1;
-								break;
-							case 'd':	//Right
-								target_orient[0] += 1;
-								break;
-							case 'h':	//Hover
-								target_orient[0] = 0;
-								target_orient[1] = 0;
-							case 'u':	//Ascend
-								target_alt += 3;
-							case 'j':	//Descend
-								target_alt -= 3;
-							case 'l':	//Land
-								ePrevState = eState;
-								eState = eLAND;
-								break;
-							default:
-								break;
-						}	
-						break;
-					case eREMOTE:
-						break;
-					default:
-						eState = ePrevState = eERR;
-						error_log("SYSTEM ERROR - Unknown Controller Mode");
-						fatal_err();
-						break;
-				}
+				//TODO: Update orient and alt with controller input
 				if(ton_delay(delay,true)) {
 					target_orient[0] = LIMIT(MIN_ORIENT,target_orient[0],MAX_ORIENT);
 					target_orient[1] = LIMIT(MIN_ORIENT,target_orient[1],MAX_ORIENT);
 					target_alt = LIMIT(MIN_ALTITUDE,target_alt,MAX_ALTITUDE);
-					get_altitude();
+					get_orient();
 					get_motors();
 					safety_checks();
 						flight_altitude(target_alt);
@@ -206,8 +156,6 @@ int main() {
 }
 
 
-// Local Functions
-
 // Sets the FATAL flag and turns on the error lamp
 void fatal_err() {
 	err_lamp.set_value(1);
@@ -218,18 +166,14 @@ void fatal_err() {
 // DayW Month DayN Time Year - MSG
 // Tue Apr 10 08:19:55 2012 - SOME ERROR - Error Details
 void error_log(const char *data) {
-	char buf[256];
-	time_t t;
-	t = time(NULL);
-	sprintf(buf,"%s",asctime(localtime(&t)));
-	buf[24] = '\0';
-	err_file << buf << " - " << data << endl;
-}
-
-// Called on a timeout, updates orientation
-void imu_loop() {
-	imu.update(orient);
-	register_timeout(imu_loop,IMU_RATE);
+	pthread_mutex_lock(&SSL_SERVER::data_mutex);
+		char buf[256];
+		time_t t;
+		t = time(NULL);
+		sprintf(buf,"%s",asctime(localtime(&t)));
+		buf[24] = '\0';
+		err_file << buf << " - " << data << endl;
+	pthread_mutex_unlock(&SSL_SERVER::data_mutex);
 }
 
 // Setup System
@@ -265,26 +209,6 @@ bool io_setup() {
 	comm_lamp.set_dir("out"); 
 	comm_lamp.set_value(0);
 
-	//Calibrate Sensors
-	if(imu.calibrate()) {
-		error_log("IO ERROR - [IMU] Calibration Failed");
-		fatal_err();
-	}
-
-	T_TONDelay delay = {false,false,5.0,0};
-	unsigned char status = 0;
-	while(!ton_delay(delay,true)) {
-		mbed.get_status(status);
-		if(status == MBED_STATUS_READY) {
-			break;
-		}
-	}
-
-	if(status != MBED_STATUS_READY) {
-		error_log("IO ERROR - [MBED] Timeout on Setup");
-		fatal_err();
-	}
-
 	if(alt_regulator.init(40,50,0,50,100)) {
 		error_log("IO ERROR - [ALTITUDE] PID Unstable Init Params");
 		fatal_err();
@@ -300,36 +224,74 @@ bool io_setup() {
 		fatal_err();
 	}
 
+	T_TONDelay delay = {false,false,5.0,{0}};
+	unsigned char mstat = 0;
+	unsigned char istat = 0;
+	while(!ton_delay(delay,true)) {
+		if(!mstat) mmbed.get_status(mstat);
+		if(!istat) imbed.get_status(istat);
+		if(mstat && istat) break;
+	}
+	
+	if(!mstat) {
+		fatal_err();
+		error_log("IO ERROR - [MOTOR MBED] Setup Failed");
+	}
+
+	if(!istat) {
+		fatal_err();
+		error_log("IO ERROR - [IMU MBED] Setup Failed");
+	}
+
 	return !FATAL;
 }
 
 // Setup Communications
 // Returns true for success, false for failed
 bool comm_setup() {
-	switch(eController) {
-		case eLOCAL:
-			break;
-		case eREMOTE:
-			error_log("COMM ERROR - Connection Failed");
+
+	//Initialize the server
+	SSL_SERVER::server_init();
+
+	//Setup logging and error tripping
+	SSL_SERVER::logger = &error_log;
+	SSL_SERVER::error = &fatal_err;
+
+	//Start the server
+	SSL_SERVER::server_start();
+	T_TONDelay timeout = {false,false,300.0,{0}}; //5 Minutes
+	while(!SSL_SERVER::server_isConnected()) {
+		//TODO:WHAT TO DO WHILE WE WAIT?
+		if(ton_delay(timeout,true)) {
+			error_log("COMM ERROR - [SSL SERVER] Connection Timeout");
 			fatal_err();
 			break;
-		default:
-			error_log("SYSTEM ERROR - Unknown Controller Mode");
-			fatal_err();
-			break;
+		}
 	}
 
 	return !FATAL;
 }
 
+//Updates orientation vector
+void get_orient() {
+	short int x,y,z;
+	if(imbed.get_data(x,y,z)) {
+		fatal_err();
+		error_log("IO ERROR - [IMU MBED] Lost Communications");
+		ePrevState = eState;
+		eState = eERR;
+	}
+
+	orient[0] = x;
+	orient[1] = y;
+	orient[2] = z;
+}
+
 //Updates global variables with the motor speeds
 void get_motors() {
-	int nok = mbed.get_motor_1(m1); nok |= mbed.get_motor_2(m2);
-	nok |= mbed.get_motor_3(m3); nok |= mbed.get_motor_4(m4);
-
-	if(nok) {
+	if(mmbed.get_data(m1,m2,m3,m4,sonar)) {
 		fatal_err();
-		error_log("IO ERROR - [MBED] Lost Communications");
+		error_log("IO ERROR - [MOTOR MBED] Lost Communications");
 		ePrevState = eState;
 		eState = eERR;
 	}
@@ -337,22 +299,9 @@ void get_motors() {
 
 //Sets the motor speeds with the global variables
 void set_motors() {
-	int nok = mbed.set_motor_1(m1); nok |= mbed.set_motor_2(m2);
-	nok |= mbed.set_motor_3(m3); nok |= mbed.set_motor_4(m4);
-
-	if(nok) {
+	if(mmbed.set_data(m1,m2,m3,m4)) {
 		fatal_err();
-		error_log("IO ERROR - [MBED] Lost Communications");
-		ePrevState = eState;
-		eState = eERR;
-	}
-}
-
-//Updates global variable with altitude
-void get_altitude() {
-	if(mbed.get_sonar(altitude)) {
-		fatal_err();
-		error_log("IO ERROR - [MBED] Lost Communications");
+		error_log("IO ERROR - [MOTOR MBED] Lost Communications");
 		ePrevState = eState;
 		eState = eERR;
 	}
@@ -360,9 +309,9 @@ void get_altitude() {
 
 //Automates the takeoff proceedure
 bool takeoff() {	
-	get_altitude();
-	get_motors();
+	get_orient();
 	safety_checks();
+	get_motors();
 		bool ok = flight_altitude(target_alt);
 		flight_stabilize(Vector3(0,0,0));
 	set_motors();
@@ -372,9 +321,9 @@ bool takeoff() {
 
 //Automates the landing proceedure
 bool landing() {	
-	get_altitude();
-	get_motors();
+	get_orient();
 	safety_checks();
+	get_motors();
 		bool ok = flight_altitude(0);
 		flight_stabilize(Vector3(0,0,0));
 	set_motors();
@@ -421,7 +370,7 @@ void flight_stabilize(Vector3 desired) {
 	*  If x is > 0, inc motors 1 & 4, dec motors 2 & 3
 	*  If y is < 0, inc motors 3 & 4, dec motors 1 & 2
 	*  If y is > 0, inc motors 1 & 2, dec motors 3 & 4
-	*  We are going to ignore z for now...
+	*  We are going to ignore z for now...but it will mod opposite pairs
 	*/  
 	
 	// Predict motor speed changes
@@ -460,5 +409,18 @@ void flight_stabilize(Vector3 desired) {
 }
 
 void safety_checks() {
+	//Check Connection
+	if(!SSL_SERVER::server_isConnected()) {
+		//Should already be logged and in fatal error mode
+		ePrevState = eState;
+		eState = eERR;
+	}
 
+	//Check Roll & Pitch
+	if(orient[0] < MIN_CRIT_ANGLE || orient[0] > MAX_CRIT_ANGLE ||
+	   orient[1] < MIN_CRIT_ANGLE || orient[1] > MAX_CRIT_ANGLE) {
+		error_log("IO ERROR - [ORIENTATION] CRITICAL ANGLE REACHED");
+		fatal_err();
+		//WHAT DO WE DO????
+	}
 }
