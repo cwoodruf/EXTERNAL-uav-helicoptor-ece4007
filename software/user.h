@@ -128,7 +128,7 @@ namespace SSL_SERVER {
 
 		SSL_CTX *ctx;
 		SSL *ssl;
-		SSL_METHOD *meth;
+		SSL_METHOD const *meth;
 		X509 *client_cert = NULL;
 
 		short int s_port = 5555;
@@ -297,7 +297,7 @@ namespace SSL_SERVER {
 		int rx = 1;
 		CONNECTION = true;
 		while(rx != 0) {
-			if(SSL_read(ssl,buf,sizeof(buf)-1) < 0) {
+			if((err = SSL_read(ssl,buf,sizeof(buf)-1)) < 0) {
 				if(logger != NULL) {
 					logger("COMM ERROR - [SSL] Read Failed");
 				}
