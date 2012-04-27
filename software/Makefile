@@ -20,7 +20,7 @@
 
 
 CXX 		= /usr/bin/g++
-CXXFLAGS 	= -Wall -g -lrt -lpthread
+CXXFLAGS 	= -Wall -g -lrt -lpthread -lssl -lcrypto
 
 all: main
 

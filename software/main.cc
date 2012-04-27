@@ -123,7 +123,7 @@ int main() {
 			case eERR:
 				switch(ePrevState) {
 					case eSETUP:
-						//Just sit here and make sure io is off
+						exit(-1);
 						break;
 					case eGROUND:
 						//Just sit here and make sure io is off
