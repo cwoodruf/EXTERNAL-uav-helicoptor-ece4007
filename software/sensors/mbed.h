@@ -24,7 +24,9 @@
 #define MBED_H
 
 #include "I2C.h"
+#include "UART.h"
 #include "../util.h"
+#include <termios.h>
 #include <iostream>
 
 using namespace std;
@@ -94,42 +96,32 @@ int MMBED::set_data(short int m1, short int m2, short int m3, short int m4) {
 }
 
 
-class IMBED : public I2C {
+class IMBED : public UART {
 
 	private:
 
 	public:
 		IMBED();
-		IMBED(int i);
+		IMBED(const char *port, speed_t baud);
 
 		~IMBED();
 		
-		int get_status(unsigned char &status);
-		int get_data(short int &x, short int &y, short int &z);
+		void get_data(int &x, int &y, int &z);
 };
 
-IMBED::IMBED() : I2C(3,MBED_IMU_ID) {
+IMBED::IMBED() : UART("/dev/ttyO1",B115200) {
 }
 
-IMBED::IMBED(int i) : I2C(i,MBED_IMU_ID) {
+IMBED::IMBED(const char *port, speed_t baud) : UART(port,baud) {	
 }
 
 IMBED::~IMBED() {
 }
 
-int IMBED::get_status(unsigned char &status) {
-	return read_byte(MBED_STATUS,status);
+void IMBED::get_data(int &x, int &y, int &z) {
+	char buffer[1028];
+	if(readline(buffer,1028) > 0) {
+		sscanf(buffer,"%d,%d,%d",&x,&y,&z);
+	}
 }
-
-int IMBED::get_data(short int &x, short int &y, short int &z) {
-	unsigned char data[6];
-	int status = read_multiple_bytes(MBED_DATA,data,6);
-
-	x = ((short int)data[0] << 8) | data[1];
-	y = ((short int)data[2] << 8) | data[3];
-	z = ((short int)data[4] << 8) | data[5];
-
-	return status;
-}
-
 #endif
