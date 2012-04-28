@@ -154,4 +154,60 @@ double rad2deg(double rad) {
 	return ((rad*180)/M_PI);
 }
 
+
+template <typename T, typename U>
+class SMA {
+	private:
+		int index;
+		int order;
+		U sum;
+		T *values;
+
+	public:
+		SMA() : index(0), order(32), sum(0.0) {
+			values = new T[order];
+		}
+
+		SMA(int oOrder) : index(0), order(oOrder), sum(0.0) {
+			values = new T[order];
+		}
+
+		SMA(const SMA &cpy) {
+			order = cpy.order;
+			index = cpy.index;
+			sum = cpy.sum;
+
+			values = new double[order];
+			for(int i=0;i<order;++i) {
+				values[i] = cpy.values[i];
+			}
+		}
+
+		~SMA() {
+			delete[] values;
+		}
+
+		T filter(T value) {
+			sum -= values[index];
+			values[index] = value;
+			sum += value;
+			index = (index + 1) % order;
+			return sum/order;
+		}
+
+		SMA &operator=(const SMA &cpy) {
+			delete[] values;
+			order = cpy.order;
+			index = cpy.index;
+			sum = cpy.sum;
+
+			values = new T[order];
+			for(int i=0;i<order;++i) {
+				values[i] = cpy.values[i];
+			}
+
+			return *this;
+		}
+};
+
 #endif
