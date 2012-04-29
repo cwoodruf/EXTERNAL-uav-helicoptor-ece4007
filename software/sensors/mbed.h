@@ -106,7 +106,7 @@ class IMBED : public UART {
 
 		~IMBED();
 		
-		void get_data(int &x, int &y, int &z);
+		int get_data(int &x, int &y, int &z);
 };
 
 IMBED::IMBED() : UART("/dev/ttyO1",B115200) {
@@ -118,10 +118,12 @@ IMBED::IMBED(const char *port, speed_t baud) : UART(port,baud) {
 IMBED::~IMBED() {
 }
 
-void IMBED::get_data(int &x, int &y, int &z) {
+int IMBED::get_data(int &x, int &y, int &z) {
 	char buffer[1028];
-	if(readline(buffer,1028) > 0) {
+	int n;
+	if((n = readline(buffer,1028)) > 0) {
 		sscanf(buffer,"%d,%d,%d",&x,&y,&z);
 	}
+	return n;
 }
 #endif

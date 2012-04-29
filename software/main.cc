@@ -226,10 +226,13 @@ bool io_setup() {
 
 	T_TONDelay delay = {false,false,5.0,{0}};
 	unsigned char mstat = 0;
-	unsigned char istat = 0;
+	int istat = -1;
+	int x,y,z;
 	while(!ton_delay(delay,true)) {
 		if(!mstat) mmbed.get_status(mstat);
-		if(!istat) imbed.get_status(istat);
+		if(istat > 0) {
+			istat = imbed.get_data(x,y,z);
+		}
 		if(mstat && istat) break;
 	}
 	
@@ -274,17 +277,18 @@ bool comm_setup() {
 
 //Updates orientation vector
 void get_orient() {
-	short int x,y,z;
-	if(imbed.get_data(x,y,z)) {
+	int x,y,z;
+	static SMA<int,long int> sma_x(16), sma_y(16), sma_z(16);
+	if(imbed.get_data(x,y,z) < 0) {
 		fatal_err();
 		error_log("IO ERROR - [IMU MBED] Lost Communications");
 		ePrevState = eState;
 		eState = eERR;
 	}
 
-	orient[0] = x;
-	orient[1] = y;
-	orient[2] = z;
+	orient[0] = (double)sma_x.filter(x)/100;
+	orient[1] = (double)sma_y.filter(y)/100;
+	orient[2] = (double)sma_z.filter(z)/100;
 }
 
 //Updates global variables with the motor speeds
