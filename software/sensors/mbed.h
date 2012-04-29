@@ -31,68 +31,54 @@
 
 using namespace std;
 
-//Register Addresses
-#define MBED_STATUS			0x00
-#define MBED_DATA			0x01
 
-#define MBED_MOTOR_ID		0x10
-#define MBED_IMU_ID			0x11
-
-
-class MMBED : public I2C {
+class MMBED : public UART {
 
 	private:
 
 	public:
 		MMBED();
-		MMBED(int i);
-
+		MMBED(const char *port, speed_t baud);
 		~MMBED();
 		
-		int get_status(unsigned char &status);
-		int get_data(short int &m1, short int &m2, short int &m3, short int &m4, short int &sonar);
-		int set_data(short int m1, short int m2, short int m3, short int m4);
+		int get_status(int &status);
+		int get_data(int &m1, int &m2, int &m3, int &m4, int s);
+		int set_setpoints(int m1, int m2, int m3, int m4);
 };
 
-MMBED::MMBED() : I2C(3,MBED_MOTOR_ID) {
+MMBED::MMBED() : UART("/dev/ttyO2",B115200) {
 }
 
-MMBED::MMBED(int i) : I2C(i,MBED_MOTOR_ID) {
+MMBED::MMBED(const char *port, speed_t baud) : UART(port,baud) {	
 }
 
 MMBED::~MMBED() {
 }
 
-int MMBED::get_status(unsigned char &status) {
-	return read_byte(MBED_STATUS,status);
+int MMBED::get_status(int &status) {
+	char buffer[32];
+	int n;
+	writeline("S");
+	if((n = readline(buffer,32)) > 0) {
+		sscanf(buffer,"%d",&status);
+	}
+	return n;
 }
 
-int MMBED::get_data(short int &m1, short int &m2, short int &m3, short int &m4, short int &sonar) {
-	unsigned char data[10];
-	int status = read_multiple_bytes(MBED_DATA,data,10);
-
-	m1 = ((short int)data[0] << 8) | data[1];
-	m2 = ((short int)data[2] << 8) | data[3];
-	m3 = ((short int)data[4] << 8) | data[5];
-	m4 = ((short int)data[6] << 8) | data[7];
-	sonar = ((short int)data[8] << 8) | data[9];
-
-	return status;
+int MMBED::get_data(int &m1, int &m2, int &m3, int &m4, int s) {
+	char buffer[256];
+	int n;
+	writeline("D");
+	if((n = readline(buffer,256)) > 0) {
+		sscanf(buffer,"%d,%d,%d,%d,%d",&m1,&m2,&m3,&m4,&s);
+	}
+	return n;
 }
 
-int MMBED::set_data(short int m1, short int m2, short int m3, short int m4) {
-	unsigned char data[8];
-	
-	data[0] = (unsigned char)(m1 >> 8);
-	data[1] = (unsigned char)(m1 && 0x00FF);
-	data[2] = (unsigned char)(m2 >> 8);
-	data[3] = (unsigned char)(m2 && 0x00FF);
-	data[4] = (unsigned char)(m3 >> 8);
-	data[5] = (unsigned char)(m3 && 0x00FF);
-	data[6] = (unsigned char)(m4 >> 8);
-	data[7] = (unsigned char)(m4 && 0x00FF);
-
-	return write_multiple_bytes(MBED_DATA,data,8);
+int MMBED::set_setpoints(int m1, int m2, int m3, int m4) {
+	char buffer[256];
+	sprintf(buffer,"%d,%d,%d,%d\n",m1,m2,m3,m4);
+	return writeline(buffer);
 }
 
 
@@ -103,9 +89,9 @@ class IMBED : public UART {
 	public:
 		IMBED();
 		IMBED(const char *port, speed_t baud);
-
 		~IMBED();
 		
+		int get_status(int &status);
 		int get_data(int &x, int &y, int &z);
 };
 
@@ -118,12 +104,24 @@ IMBED::IMBED(const char *port, speed_t baud) : UART(port,baud) {
 IMBED::~IMBED() {
 }
 
-int IMBED::get_data(int &x, int &y, int &z) {
-	char buffer[1028];
+int IMBED::get_status(int &status) {
+	char buffer[32];
 	int n;
-	if((n = readline(buffer,1028)) > 0) {
+	writeline("S");
+	if((n = readline(buffer,32)) > 0) {
+		sscanf(buffer,"%d",&status);
+	}
+	return n;
+}
+
+int IMBED::get_data(int &x, int &y, int &z) {
+	char buffer[256];
+	int n;
+	writeline("D");
+	if((n = readline(buffer,256)) > 0) {
 		sscanf(buffer,"%d,%d,%d",&x,&y,&z);
 	}
 	return n;
 }
+
 #endif

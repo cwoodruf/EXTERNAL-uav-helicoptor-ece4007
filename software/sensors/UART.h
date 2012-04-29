@@ -45,20 +45,12 @@ UART::UART(const char *port, speed_t baud) {
 }
 
 int UART::writeline(const char *line) {
-	int len = strlen(line);
-	char *out = new char[len + 1];
-
-	strcpy(out,line);
-	out[len] = 0x0D;
-	out[len + 1] = 0x00;
-	if(write(fd,out,strlen(out)) < 0) {
+	if(write(fd,line,strlen(line)) < 0) {
 		cout << "Error writing to serial port" << endl;
 		return -1;
 	}
 
 	return 0;
-
-	delete[] out;
 }
 
 int UART::readline(char *line, int length) {
