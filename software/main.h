@@ -37,7 +37,7 @@ void get_altitude();
 bool takeoff();
 bool landing();
 bool flight_altitude(unsigned short int desired);
-void flight_stabilize(Vector3 desired);
+void flight_stabilize(int *desired);
 void safety_checks();
 
 #endif

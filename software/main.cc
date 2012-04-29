@@ -41,8 +41,9 @@ using namespace std;
 GPIO calib_lamp;
 GPIO comm_lamp;
 GPIO err_lamp;
-Vector3 orient;
-Vector3 target_orient;
+int orient[3];
+int target_orient[3];
+int zero_orient[3] = {0,0,0};
 MMBED mmbed;
 IMBED imbed;
 Altimeter alt;
@@ -56,7 +57,7 @@ ofstream err_file;
 bool FATAL = false;
 eSTATE eState = eSETUP;
 eSTATE ePrevState = eSETUP;
-short int m1,m2,m3,m4,sonar;
+int m1,m2,m3,m4,sonar;
 unsigned short int target_alt = TAKEOFF_ALTITUDE;
 short int altitude;
 
@@ -225,14 +226,11 @@ bool io_setup() {
 	}
 
 	T_TONDelay delay = {false,false,5.0,{0}};
-	unsigned char mstat = 0;
-	int istat = -1;
-	int x,y,z;
+	int mstat = 0;
+	int istat = 0;
 	while(!ton_delay(delay,true)) {
 		if(!mstat) mmbed.get_status(mstat);
-		if(istat > 0) {
-			istat = imbed.get_data(x,y,z);
-		}
+		if(!istat) imbed.get_status(istat);
 		if(mstat && istat) break;
 	}
 	
@@ -277,18 +275,12 @@ bool comm_setup() {
 
 //Updates orientation vector
 void get_orient() {
-	int x,y,z;
-	static SMA<int,long int> sma_x(16), sma_y(16), sma_z(16);
-	if(imbed.get_data(x,y,z) < 0) {
+	if(imbed.get_data(orient[0],orient[1],orient[2]) < 0) {
 		fatal_err();
 		error_log("IO ERROR - [IMU MBED] Lost Communications");
 		ePrevState = eState;
 		eState = eERR;
 	}
-
-	orient[0] = (double)sma_x.filter(x)/100;
-	orient[1] = (double)sma_y.filter(y)/100;
-	orient[2] = (double)sma_z.filter(z)/100;
 }
 
 //Updates global variables with the motor speeds
@@ -303,7 +295,7 @@ void get_motors() {
 
 //Sets the motor speeds with the global variables
 void set_motors() {
-	if(mmbed.set_data(m1,m2,m3,m4)) {
+	if(mmbed.set_setpoints(m1,m2,m3,m4)) {
 		fatal_err();
 		error_log("IO ERROR - [MOTOR MBED] Lost Communications");
 		ePrevState = eState;
@@ -317,7 +309,7 @@ bool takeoff() {
 	safety_checks();
 	get_motors();
 		bool ok = flight_altitude(target_alt);
-		flight_stabilize(Vector3(0,0,0));
+		flight_stabilize(zero_orient);
 	set_motors();
 
 	return ok;
@@ -329,7 +321,7 @@ bool landing() {
 	safety_checks();
 	get_motors();
 		bool ok = flight_altitude(0);
-		flight_stabilize(Vector3(0,0,0));
+		flight_stabilize(zero_orient);
 	set_motors();
 
 	return ok;
@@ -355,7 +347,7 @@ bool flight_altitude(unsigned short int desired) {
 
 // Run the stabilization control system
 // The desired vector is what orientation we want to be at
-void flight_stabilize(Vector3 desired) {
+void flight_stabilize(int *desired) {
 	/* We want maintain some pitch and some yaw
 	*
 	*  (1)    (2)
@@ -378,8 +370,8 @@ void flight_stabilize(Vector3 desired) {
 	*/  
 	
 	// Predict motor speed changes
-	unsigned short int xd = (unsigned short int)(desired[0]+0.5);
-	unsigned short int xo = (unsigned short int)(orient[0]+0.5);
+	unsigned short int xd = (unsigned short int)(desired[0] + 9000);
+	unsigned short int xo = (unsigned short int)(orient[0] + 9000);
 	if(!inDeadBand(xd,xo,ORIENT_DEADBAND)) {
 		unsigned short int out;
 		if(x_regulator.regulate(xd,xo,out)) {
@@ -394,8 +386,8 @@ void flight_stabilize(Vector3 desired) {
 		}
 	}
 
-	unsigned short int yd = (unsigned short int)(desired[1]+0.5);
-	unsigned short int yo = (unsigned short int)(orient[1]+0.5);
+	unsigned short int yd = (unsigned short int)(desired[1] + 9000);
+	unsigned short int yo = (unsigned short int)(orient[1] + 9000);
 	if(!inDeadBand(yd,yo,ORIENT_DEADBAND)) {
 		unsigned short int out;
 		if(y_regulator.regulate(yd,yo,out)) {
