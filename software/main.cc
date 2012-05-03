@@ -69,7 +69,7 @@ int main() {
 		switch(eState) {
 			case eSETUP:
 				//Run setup routines, proceed if all pass
-				if(sys_setup() && io_setup() && comm_setup()) { 
+				if(sys_setup() && /*io_setup() &&*/ comm_setup()) { 
 					calib_lamp.set_value(1);
 					comm_lamp.set_value(1);
 					eState = eGROUND;
@@ -81,6 +81,7 @@ int main() {
 			case eGROUND:
 				//Wait for takeoff command (A Button)
 				if(SSL_SERVER::tXbox.buttons[0]) {
+					cout << "TAKEOFF!!!" << endl;
 					ePrevState = eState;
 					eState = eTAKEOFF;
 				}

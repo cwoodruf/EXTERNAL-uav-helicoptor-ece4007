@@ -230,7 +230,7 @@ namespace SSL_SERVER {
 			return NULL;
 		}
 		client_len = sizeof(sa_cli);
-		if((sock = accept(listen_sock,(struct sockaddr *)&sa_cli,&client_len))) {
+		if((sock = accept(listen_sock,(struct sockaddr *)&sa_cli,&client_len)) < 0) {
 			if(logger != NULL) {
 				logger("COMM ERROR - [TCP] Could Not Accept Client");
 			}
@@ -322,6 +322,7 @@ namespace SSL_SERVER {
 				);
 			pthread_mutex_unlock(&data_mutex);
 
+			strcpy(outbuf,"HI!");
 			if(SSL_write(ssl,outbuf,strlen(outbuf)) < 0 ) {
 				if(logger != NULL) {
 					logger("COMM ERROR - [SSL] Write Failed");

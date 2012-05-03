@@ -42,7 +42,7 @@ class MMBED : public UART {
 		~MMBED();
 		
 		int get_status(int &status);
-		int get_data(int &m1, int &m2, int &m3, int &m4, int s);
+		int get_data(int &m1, int &m2, int &m3, int &m4, int &s);
 		int set_setpoints(int m1, int m2, int m3, int m4);
 };
 
@@ -65,7 +65,7 @@ int MMBED::get_status(int &status) {
 	return n;
 }
 
-int MMBED::get_data(int &m1, int &m2, int &m3, int &m4, int s) {
+int MMBED::get_data(int &m1, int &m2, int &m3, int &m4, int &s) {
 	char buffer[256];
 	int n;
 	writeline("D");
