@@ -1,0 +1,11 @@
+--- libnl-1.1/include/netlink-local.h	2008-01-14 10:48:45.000000000 -0500
++++ libnl-1.1/include/netlink-local.h	2012-02-11 16:28:29.728821882 -0500
+@@ -30,6 +30,8 @@
+ #include <arpa/inet.h>
+ #include <netdb.h>
+ 
++#include <limits.h>
++
+ #ifndef SOL_NETLINK
+ #define SOL_NETLINK 270
+ #endif
